@@ -3,13 +3,11 @@ version: '3.8'
 services:
   backend:
     build: backend/.
-    command: bash -c 'while !</dev/tcp/db/${DB_PORT}; do sleep 1; done; uvicorn backend.main:app --host 0.0.0.0 --reload'
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; alembic upgrade head; uvicorn backend.main:app --host 0.0.0.0 --reload'
     volumes:
       - .:/backend
     ports:
       - 8000:8000
-    environment:
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
     depends_on:
       - db
 
@@ -18,9 +16,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      - 5433:${DB_PORT}
+      - ${DB_PORT}:5432
     expose:
-      - ${DB_PORT}
+      - 5432
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASS}

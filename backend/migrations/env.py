@@ -16,6 +16,20 @@ sys.path.insert(0, myPath + '/../../')
 # access to the values within the .ini file in use.
 config = context.config
 
+from backend.config import (
+    DB_USER,
+    DB_PASS,
+    DB_NAME,
+    DB_HOST,
+    DB_PORT,
+)
+
+section = config.config_ini_section
+config.set_section_option(section, "DB_HOST", DB_HOST)
+config.set_section_option(section, "DB_PORT", DB_PORT)
+config.set_section_option(section, "DB_USER", DB_USER)
+config.set_section_option(section, "DB_NAME", DB_NAME)
+config.set_section_option(section, "DB_PASS", DB_PASS)
 
 # section = config.config_ini_section
 # config.set_section_option(section, )

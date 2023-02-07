@@ -1,101 +1,78 @@
-from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect, Depends, HTTPException, status
-from fastapi.templating import Jinja2Templates
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from datetime import datetime
+from enum import Enum
+from typing import List, Optional
+
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+# from backend.models.models import User, database
+
+app = FastAPI(
+    title="Tutorial FastAPI"
+)
+
+fake_users = [
+    {"id": 1, "role": "admin", "name": "Bob"},
+    {"id": 2, "role": "investor", "name": "John"},
+    {"id": 3, "role": "trader", "name": "Matt"},
+]
 
 
-from backend.models.models import User
+class DegreeType(Enum):
+    newbie = "newbie"
+    middle = "middle"
+    expert = "expert"
 
-app = FastAPI()
-templates = Jinja2Templates(directory="backend/templates")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-socks = []
+
+class Degree(BaseModel):
+    id: int
+    created_at: datetime
+    type_degree: DegreeType
+
+
+class UserScheme(BaseModel):
+    id: int
+    role: str
+    name: str
+    degree: Optional[List[Degree]] = []
+
+
+@app.get("/users/{user_id}", response_model=List[UserScheme])
+def get_user(user_id: int):
+    return [user for user in fake_users if user["id"] == user_id]
+
+
+fake_trades = [
+    {"id": 1, "user_id": 1, "currency": "RUB", "side": "buy", "price": 100, "amount": 2.12},
+    {"id": 2, "user_id": 1, "currency": "RUB", "side": "sell", "price": 125, "amount": 2.12},
+]
+
+
+class Trade(BaseModel):
+    id: int
+    user_id: int
+    currency: str
+    side: str
+    price: float = Field(ge=0)
+    amount: float
+
+
+@app.post("/trades")
+def add_trades(trades: List[Trade]):
+    fake_trades.extend(trades)
+    return {"status": 200, "data": fake_trades}
 
 
 @app.get("/")
-async def get(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
+async def read_root():
+    return {"status-200": 200}
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    socks.append(websocket)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            for s in socks:
-                await s.send_text(f"Message from {websocket.scope['client']}: {data}")
-    except WebSocketDisconnect:
-        socks.remove(websocket)
-        for s in socks:
-            await s.send_text(f"Leaved: {websocket.scope['client']}")
+@app.on_event("startup")
+async def startup():
+    return {"status": 200}
 
 
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "fakehashedsecret",
-        "disabled": False,
-    },
-    "alice": {
-        "username": "alice",
-        "full_name": "Alice Wonderson",
-        "email": "alice@example.com",
-        "hashed_password": "fakehashedsecret2",
-        "disabled": True,
-    },
-}
-
-
-# def fake_hash_password(password: str):
-#     return "fakehashed" + password
-
-
-# def get_user(db, username: str):
-#     if username in db:
-#         user_dict = db[username]
-#         return UserInDB(**user_dict)
-#
-#
-# def fake_decode_token(token):
-#     # This doesn't provide any security at all
-#     # Check the next version
-#     user = get_user(fake_users_db, token)
-#     return user
-#
-#
-# async def get_current_user(token: str = Depends(oauth2_scheme)):
-#     user = fake_decode_token(token)
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Invalid authentication credentials",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         )
-#     return user
-#
-#
-# async def get_current_active_user(current_user: User = Depends(get_current_user)):
-#     if current_user.disabled:
-#         raise HTTPException(status_code=400, detail="Inactive user")
-#     return current_user
-#
-#
-# @app.post("/token")
-# async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-#     user_dict = fake_users_db.get(form_data.username)
-#     if not user_dict:
-#         raise HTTPException(status_code=400, detail="Incorrect username or password")
-#     user = UserInDB(**user_dict)
-#     hashed_password = fake_hash_password(form_data.password)
-#     if not hashed_password == user.hashed_password:
-#         raise HTTPException(status_code=400, detail="Incorrect username or password")
-#
-#     return {"access_token": user.username, "token_type": "bearer"}
-#
-#
-# @app.get("/users/me")
-# async def read_users_me(current_user: User = Depends(get_current_active_user)):
-#     return current_user
+@app.on_event("shutdown")
+async def shutdown():
+    return "cocksucker"

@@ -1,7 +1,10 @@
-from pydantic import BaseSettings, Field
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
-class Settings(BaseSettings):
-    db_url: str = Field(..., env='DATABASE_URL')
-
-settings = Settings()
+DB_USER = os.environ.get("DB_USER")
+DB_PASS = os.environ.get("DB_PASS")
+DB_NAME = os.environ.get("DB_NAME")
+DB_HOST = os.environ.get("DB_HOST")
+DB_PORT = os.environ.get("DB_PORT")
