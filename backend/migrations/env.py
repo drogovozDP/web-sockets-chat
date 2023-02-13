@@ -1,3 +1,4 @@
+import sys, os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -5,24 +6,18 @@ from sqlalchemy import pool
 
 from alembic import context
 
-import sys, os
 
 # add app folder to system path (alternative is running it from parent folder with python -m ...)
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
 
+from backend.src.auth.models import metadata as metadata_auth
+from backend.src.config import DB_USER, DB_PASS, DB_NAME, DB_HOST, DB_PORT
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-
-from backend.config import (
-    DB_USER,
-    DB_PASS,
-    DB_NAME,
-    DB_HOST,
-    DB_PORT,
-)
 
 section = config.config_ini_section
 config.set_section_option(section, "DB_HOST", DB_HOST)
@@ -40,11 +35,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-from backend.models.models import metadata
-target_metadata = metadata
+target_metadata = [metadata_auth]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

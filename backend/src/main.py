@@ -6,19 +6,10 @@ from fastapi_users import FastAPIUsers
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
 
-from backend.auth.database import (
-    User,
-)
-from backend.auth.manager import (
-    get_user_manager,
-)
-from backend.auth.auth import (
-    auth_backend,
-)
-from backend.auth.schemas import (
-    UserRead,
-    UserCreate,
-)
+from backend.src.auth.models import User
+from backend.src.auth.manager import get_user_manager
+from backend.src.auth.config import auth_backend
+from backend.src.auth.schemas import UserRead, UserCreate
 
 fastapi_users = FastAPIUsers[User, int](
     get_user_manager,
@@ -39,7 +30,6 @@ app.include_router(
     prefix="/auth",
     tags=["auth"],
 )
-
 
 current_user = fastapi_users.current_user()
 
