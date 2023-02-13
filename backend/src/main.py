@@ -1,10 +1,5 @@
-import os, sys
-
 from fastapi import FastAPI, Depends
 from fastapi_users import FastAPIUsers
-
-myPath = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, myPath + '/../../')
 
 from backend.src.auth.models import User
 from backend.src.auth.manager import get_user_manager
