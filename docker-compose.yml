@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     build: backend/.
-    command: bash -c 'while !</dev/tcp/db/${DB_PORT}; do sleep 1; done; alembic upgrade head; uvicorn main:app --host 0.0.0.0 --reload'
+    command: bash -c 'while !</dev/tcp/db/${DB_PORT}; do sleep 1; done; alembic upgrade head; uvicorn src.main:app --host 0.0.0.0 --reload'
     volumes:
       - ./backend:/backend
     ports:

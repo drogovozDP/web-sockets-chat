@@ -341,14 +341,6 @@ build_docs = ["sphinx (>=1.6)", "sphinxcontrib-fulltoc (>=1.2.0)", "cloud-spthem
 totp = ["cryptography"]
 
 [[package]]
-name = "psycopg2-binary"
-version = "2.9.5"
-description = "psycopg2 - Python-PostgreSQL Database Adapter"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[[package]]
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
@@ -511,7 +503,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "642c1423713454f2b5a3024cc8a2d930f5ace20159c9d11dd8f926f4dcb8786a"
+content-hash = "240a6e7f85d0125e501deb9249250cd08e37adfdfbbcce43c906b387137b5869"
 
 [metadata.files]
 alembic = []
@@ -538,7 +530,6 @@ mako = []
 markupsafe = []
 ormar = []
 passlib = []
-psycopg2-binary = []
 pycparser = [
     {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
     {file = "pycparser-2.21.tar.gz", hash = "sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"},
