@@ -6,6 +6,7 @@ from backend.src.auth.manager import get_user_manager
 from backend.src.auth.config import auth_backend
 from backend.src.auth.schemas import UserRead, UserCreate
 
+
 fastapi_users = FastAPIUsers[User, int](
     get_user_manager,
     [auth_backend],
@@ -14,6 +15,7 @@ fastapi_users = FastAPIUsers[User, int](
 app = FastAPI(
     title="Tutorial FastAPI"
 )
+
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
