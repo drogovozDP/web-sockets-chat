@@ -1,20 +1,14 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi_users import FastAPIUsers
 
 from backend.src.auth.models import User
-from backend.src.auth.manager import get_user_manager
-from backend.src.auth.config import auth_backend
+from backend.src.auth.config import fastapi_users, auth_backend, current_user
 from backend.src.auth.schemas import UserRead, UserCreate
+from backend.src.chat.router import router as router_chat
 
-
-fastapi_users = FastAPIUsers[User, int](
-    get_user_manager,
-    [auth_backend],
-)
 
 app = FastAPI(
-    title="Tutorial FastAPI"
+    title="Chat FastAPI"
 )
 
 app.include_router(
@@ -29,8 +23,6 @@ app.include_router(
     tags=["auth"],
 )
 
-current_user = fastapi_users.current_user()
-
 origins = [
     "http://localhost:3000",
 ]
@@ -42,7 +34,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 
 @app.get("/protected-route")
@@ -58,3 +49,6 @@ def unprotected_route():
 @app.get("/api/test")
 async def test():
     return "Hello from backend!"
+
+
+app.include_router(router_chat)
