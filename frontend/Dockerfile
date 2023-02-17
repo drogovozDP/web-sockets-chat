@@ -1,0 +1,12 @@
+#FROM node:9
+FROM node:18.1.0-alpine3.15 AS react
+
+WORKDIR /frontend
+
+COPY . .
+
+RUN npm install
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

@@ -4,13 +4,24 @@ services:
   backend:
     build: backend/.
     command: bash -c 'while !</dev/tcp/db/${DB_PORT}; do sleep 1; done; alembic upgrade head; uvicorn src.main:app --host 0.0.0.0 --reload'
+    container_name: backend
     volumes:
       - ./backend:/backend
     ports:
       - 8000:8000
 
+  frontend:
+    build:
+      context: frontend/.
+    ports:
+      - 3000:3000
+    container_name: frontend
+    volumes:
+      - ./frontend:/frontend
+
   db:
     image: postgres:15-alpine
+    container_name: db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
