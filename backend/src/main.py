@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_users import FastAPIUsers
 
 from backend.src.auth.models import User
@@ -30,6 +31,19 @@ app.include_router(
 
 current_user = fastapi_users.current_user()
 
+origins = [
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 @app.get("/protected-route")
 def protected_route(user: User = Depends(current_user)):
@@ -42,5 +56,5 @@ def unprotected_route():
 
 
 @app.get("/api/test")
-def test():
+async def test():
     return "Hello from backend!"
