@@ -10,6 +10,7 @@ class Chat(BaseModel):
 
 class Message(BaseModel):
     id: int
+    value: str
     sender: int
     chat_id: int
     checked: bool

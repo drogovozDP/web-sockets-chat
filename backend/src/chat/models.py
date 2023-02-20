@@ -6,7 +6,7 @@ from backend.src.auth.models import auth_user
 
 
 metadata = MetaData()
-
+# TODO make chat's id UUID
 chat = Table(
     "chat",
     metadata,
@@ -18,6 +18,7 @@ message = Table(
     "message",
     metadata,
     Column("id", Integer, primary_key=True),
+    Column("value", String, nullable=False),
     Column("sender", Integer, ForeignKey(auth_user.c.id)),
     Column("chat_id", Integer, ForeignKey(chat.c.id)),
     Column("checked", Boolean, default=False),
