@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.auth.models import User
+from backend.src.chat.models import chat, message, user_chat
 from backend.src.auth.config import current_user
 from backend.src.database import get_async_session
 
@@ -18,7 +19,9 @@ async def get_list_chat(
         session: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_user)
 ):
-    query = select(User).where()
+    query = select(chat).filter(chat.c.id.in_(
+        select(user_chat.c.chat_id).where(user_chat.c.user_id == user.id).subquery()
+    ))
     result = await session.execute(query)
     return result.all()
 
@@ -29,8 +32,9 @@ async def get_specific_chat(
         session: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_user)
 ):
-    query = select(User).where(User.c.id == chat_id)
+    subquery = select(user_chat.c.chat_id).where(
+        and_(user_chat.c.user_id == user.id, user_chat.c.chat_id == chat_id)
+    ).subquery()
+    query = select(message).where(message.c.chat_id == subquery)
     result = await session.execute(query)
     return result.all()
-
-# select name from auth_user where auth_user.id in (select user_id from user_chat where chat_id = 1);
