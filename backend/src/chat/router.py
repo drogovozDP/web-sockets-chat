@@ -19,9 +19,8 @@ async def get_list_chat(
         session: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_user)
 ):
-    query = select(chat).filter(chat.c.id.in_(
-        select(user_chat.c.chat_id).where(user_chat.c.user_id == user.id).subquery()
-    ))
+    subquery = select(user_chat).where(user_chat.c.user_id == user.id).subquery()
+    query = select(chat).join(subquery).filter(subquery.c.chat_id == chat.c.id)
     result = await session.execute(query)
     return result.all()
 
