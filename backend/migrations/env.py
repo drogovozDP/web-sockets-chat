@@ -11,7 +11,7 @@ from alembic import context
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
 
-from backend.src.auth.models import metadata as metadata_auth
+from backend.src.auth_depricated.models import metadata as metadata_auth
 from backend.src.chat.models import metadata as metadata_chat
 from backend.src.config import DB_USER, DB_PASS, DB_NAME, DB_HOST, DB_PORT
 

@@ -1,0 +1,40 @@
+#Chat > h1 {
+    text-align: center;
+}
+
+#Chat > nav {
+    display: flex;
+}
+
+#Chat > nav > ul {
+    overflow: scroll;
+    width: 200px; /* Ширина блока */
+    height: 500px; /* Высота блока */
+    padding: 5px; /* Поля вокруг текста */
+    border: solid 1px black; /* Параметры рамки */
+    font-size: calc(7px + 1vmin);
+}
+
+#Chat > nav > ul:nth-child(1) {
+    width: 200px;
+}
+
+#Chat > nav > ul:nth-child(1) > li{
+    width: 150px;
+    background-color: #344152;
+    color: #c5c5c5;
+    padding: 14px 25px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    border: 2px solid #14202a;
+}
+
+#Chat > nav > ul:nth-child(1) > li:hover{
+    background-color: #212a36;
+    cursor: pointer;
+}
+
+#Chat > nav > ul:nth-child(2) {
+    width: 500px;
+}

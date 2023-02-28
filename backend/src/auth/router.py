@@ -1,38 +1,45 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.auth.models import User
-from backend.src.auth.schemas import UserRead, UserCreate
-from backend.src.auth.config import fastapi_users, auth_backend, current_user
+from backend.src.database import get_async_session
+from backend.src.auth.schemas import UserCreate, UserRead
+from backend.src.auth import utils
 
+
+test_user = {
+    "email": "dima@mail.com",
+    "password": "dimapass",
+}
 
 router = APIRouter(
     prefix="/auth",
-    tags=["Auth"],
-)
-
-router.include_router(
-    fastapi_users.get_auth_router(auth_backend),
-    prefix="/auth/jwt",
-    tags=["Auth"],
-)
-
-router.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
-    prefix="/auth",
-    tags=["Auth"],
+    tags=["Auth"]
 )
 
 
-@router.get("/protected-route")
-def protected_route(user: User = Depends(current_user)):
-    return f"Hello, {user.name} {user.surname}"
+@router.post("/register")
+async def register(user: UserCreate, session: AsyncSession = Depends(get_async_session)):
+    check_user = await utils.get_user_by_email(user.email, session)
+    if len(check_user) != 0:
+        raise HTTPException(status_code=400, detail="Email already in use.")
+    response = await utils.create_user(user, session)
+    return response
 
 
-@router.get("/unprotected-route")
-def unprotected_route():
-    return f"Hello, anonim"
+@router.post("/token")
+async def generate_token(
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        session: AsyncSession = Depends(get_async_session)
+):
+    user = await utils.authenticate_user(form_data.username, form_data.password, session)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid Credentials.")
+
+    return await utils.create_token(user)
 
 
-@router.get("/api/test")
-async def test():
-    return "Hello from backend!"
+# TODO remove hashed password from response
+@router.get("/api/users/me")
+async def get_user(user: UserRead = Depends(utils.get_current_user)):
+    return user
