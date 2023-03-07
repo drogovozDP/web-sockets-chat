@@ -1,5 +1,6 @@
 import "./css/App.css";
 import React from "react";
+import { appendMessage } from "./ChatUtils";
 
 import {
     BrowserRouter as Router,
@@ -15,7 +16,7 @@ import Chat from "./Chat";
 
 import Login from "./Login";
 import Profile from "./Profile";
-import {RequireToken} from "./Auth";
+import { RequireToken } from "./Auth";
 
 
 export default class App extends React.Component {
@@ -24,6 +25,16 @@ export default class App extends React.Component {
         this.state = {
 
         }
+    }
+
+    async componentDidMount() {
+        // const url = getSocketUrl()
+        // console.log(url)
+        // ws = new WebSocket(url)
+        // ws.onmessage = (ev) => {
+        //     appendMessage(JSON.parse(ev.data))
+        // };
+
     }
 
     render() {
@@ -39,13 +50,13 @@ export default class App extends React.Component {
                                 <Link to="/register">Register</Link>
                             </li>
                             <li>
-                                <Link to="/login">Log In</Link>
+                                <Link to="/login">LogIn</Link>
                             </li>
                             <li>
-                                <Link to="logout">Log Out</Link>
+                                <Link to="logout">LogOut</Link>
                             </li>
                             <li>
-                                <Link to="chat">Chat List</Link>
+                                <Link to="chat">Chat</Link>
                             </li>
                             <li>
                                 <Link to="profile">Profile</Link>

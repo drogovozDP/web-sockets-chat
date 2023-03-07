@@ -9,6 +9,7 @@ from backend.src.database import get_async_session
 from backend.src.auth.config import oauth2_schema, ALGORITHM
 from backend.src.auth.models import auth_user
 from backend.src.auth.schemas import UserCreate
+from backend.src.auth.services import database
 
 
 async def get_user_by_email(email: str, session: AsyncSession):
@@ -51,11 +52,12 @@ async def create_token(user: auth_user):
     return dict(access_token=token, token_type="bearer")
 
 
+# TODO remove unnecessary fields from return user
+# TODO try to remove database query
 async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSession = Depends(get_async_session)):
     try:
         payload = jwt.decode(token, SECRET_AUTH, algorithms=[ALGORITHM])
-        query = select(auth_user).where(auth_user.c.email == payload["email"])
-        result = await session.execute(query)
+        user = await database.get_user_by_email(payload["email"], session)
     except:
         raise HTTPException(status_code=401, detail="Invalid Email or Password.")
-    return result.all()[0]
+    return user

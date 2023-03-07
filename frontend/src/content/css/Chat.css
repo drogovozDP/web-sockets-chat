@@ -6,20 +6,30 @@
     display: flex;
 }
 
-#Chat > nav > ul {
-    overflow: scroll;
-    width: 200px; /* Ширина блока */
-    height: 500px; /* Высота блока */
-    padding: 5px; /* Поля вокруг текста */
-    border: solid 1px black; /* Параметры рамки */
-    font-size: calc(7px + 1vmin);
-}
-
-#Chat > nav > ul:nth-child(1) {
+/* list block start*/
+.list_header {
     width: 200px;
+    /*height: 500px;*/
+    padding: 5px;
+    border: solid 1px black;
+    font-size: 14px;
 }
 
-#Chat > nav > ul:nth-child(1) > li{
+.list_header > h3 {
+    text-align: center;
+}
+
+.list {
+    overflow: scroll;
+    width: 200px;
+    height: 500px;
+    padding: 5px;
+    border: solid 1px black;
+    font-size: 14px;
+}
+
+
+.list > li{
     width: 150px;
     background-color: #344152;
     color: #c5c5c5;
@@ -30,11 +40,90 @@
     border: 2px solid #14202a;
 }
 
-#Chat > nav > ul:nth-child(1) > li:hover{
+.list > li:hover{
+    background-color: #212a36;
+    cursor: pointer;
+}
+/* list block end */
+
+/* block content start */
+.block_content {
+    width: 500px;
+    background-color: #1d2026;
+}
+/* block content end */
+
+/* chat block start */
+#chat_block {
+    display: none;
+}
+
+/* messages */
+#Chat > nav > ul:nth-child(2) > li > ul:nth-child(1) {
+    overflow: scroll;
+    height: 464px;
+    border: solid 1px black;
+    font-size: 14px;
+}
+
+#messages > li {
+    border-radius: 10px;
+    padding: 10px;
+    margin: 5px;
+    background-color: #344152;
+    border: 2px solid #14202a;
+}
+
+#messages > li:hover {
     background-color: #212a36;
     cursor: pointer;
 }
 
-#Chat > nav > ul:nth-child(2) {
-    width: 500px;
+/* text area block*/
+#Chat > nav > ul:nth-child(2) > li:nth-child(2) {
+    display: flex;
+    flex-direction: row;
+    overflow: scroll;
+    height: 108px;
+    border: solid 1px black;
+    font-size: calc(7px + 1vmin);
 }
+
+#Chat > nav > ul:nth-child(2) > li:nth-child(2) > textarea {
+    resize: none;
+    width: 100%;
+}
+
+/* button for sending messages */
+#Chat > nav > ul:nth-child(2) > li:nth-child(2) > button {
+    background-color: #14202a;
+    border: none;
+    color: #c5c5c5;
+    width: 30%;
+    display: flex;
+    align-items:center;
+    justify-content:center;
+}
+
+#Chat > nav > ul:nth-child(2) > li:nth-child(2) > button:hover {
+    background-color: #1e303f;
+    cursor: pointer;
+}
+/* chat block end */
+
+/* new user block start*/
+#new_user_block {
+    display: none;
+}
+
+#checkboxes > ul {
+    height: 300px;
+    overflow: scroll;
+}
+/* new user block end*/
+
+/* profile block start*/
+#profile_block {
+    display: none;
+}
+/* profile block end*/

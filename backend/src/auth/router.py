@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from backend.src.database import get_async_session
+from backend.src.auth.models import auth_user
 from backend.src.auth.schemas import UserCreate, UserRead
 from backend.src.auth import utils
 
@@ -37,6 +39,16 @@ async def generate_token(
         raise HTTPException(status_code=401, detail="Invalid Credentials.")
 
     return await utils.create_token(user)
+
+
+@router.get("/api/users")
+async def get_all_users(
+        user: UserRead = Depends(utils.get_current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
+    query = select(auth_user).where(auth_user.c.id != user.id)
+    result = await session.execute(query)
+    return result.all()
 
 
 # TODO remove hashed password from response
