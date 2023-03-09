@@ -4,18 +4,17 @@ from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib import hash
 
-from backend.src.config import SECRET_AUTH
+from backend.src.config import SECRET_AUTH, ALGORITHM
 from backend.src.database import get_async_session
-from backend.src.auth.config import oauth2_schema, ALGORITHM
+from backend.src.auth.config import oauth2_schema
 from backend.src.auth.models import auth_user
 from backend.src.auth.schemas import UserCreate
-from backend.src.auth.services import database
 
 
 async def get_user_by_email(email: str, session: AsyncSession):
     query = select(auth_user).where(auth_user.c.email == email)
     result = await session.execute(query)
-    return result.all()
+    return result.all()[0]
 
 
 async def create_user(user: UserCreate, session: AsyncSession):
@@ -35,10 +34,10 @@ async def create_user(user: UserCreate, session: AsyncSession):
 async def authenticate_user(email: str, password: str, session: AsyncSession):
     user = await get_user_by_email(email, session)
 
-    if len(user) == 0 or not hash.bcrypt.verify(password, user[0].hashed_password):
+    if len(user) == 0 or not hash.bcrypt.verify(password, user.hashed_password):
         return False
 
-    return user[0]
+    return user
 
 
 async def create_token(user: auth_user):
@@ -52,12 +51,16 @@ async def create_token(user: auth_user):
     return dict(access_token=token, token_type="bearer")
 
 
-# TODO remove unnecessary fields from return user
-# TODO try to remove database query
 async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSession = Depends(get_async_session)):
     try:
         payload = jwt.decode(token, SECRET_AUTH, algorithms=[ALGORITHM])
-        user = await database.get_user_by_email(payload["email"], session)
+        user = await get_user_by_email(payload["email"], session)
     except:
         raise HTTPException(status_code=401, detail="Invalid Email or Password.")
     return user
+
+
+async def get_all_users(user_id: int, session: AsyncSession):
+    query = select(auth_user).where(auth_user.c.id != user_id)
+    result = await session.execute(query)
+    return result.all()
