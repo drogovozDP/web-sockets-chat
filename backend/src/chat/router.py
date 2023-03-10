@@ -5,7 +5,7 @@ from fastapi import WebSocketDisconnect, HTTPException
 from sqlalchemy import select, and_, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.chat.utils import manager
+from backend.src.chat.websocket_manager import manager
 from backend.src.chat.models import chat, message, user_chat
 from backend.src.auth.models import auth_user
 from backend.src.auth.utils import get_current_user
