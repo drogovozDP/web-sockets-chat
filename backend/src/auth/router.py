@@ -16,7 +16,7 @@ router = APIRouter(
 @router.post("/register")
 async def register(user: UserCreate, session: AsyncSession = Depends(get_async_session)):
     check_user = await utils.get_user_by_email(user.email, session)
-    if len(check_user) != 0:
+    if check_user is not None:
         raise HTTPException(status_code=400, detail="Email already in use.")
     response = await utils.create_user(user, session)
     return response

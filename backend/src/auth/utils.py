@@ -14,7 +14,8 @@ from backend.src.auth.schemas import UserCreate
 async def get_user_by_email(email: str, session: AsyncSession):
     query = select(auth_user).where(auth_user.c.email == email)
     result = await session.execute(query)
-    return result.all()[0]
+    user = result.all()
+    return user[0] if len(user) != 0 else None
 
 
 async def create_user(user: UserCreate, session: AsyncSession):

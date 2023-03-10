@@ -4,6 +4,7 @@ import json
 from fastapi import WebSocket, Depends
 from sqlalchemy import select, insert, delete
 
+from backend.src.chat import utils
 from backend.src.chat.models import user_chat, message
 from backend.src.database import get_async_session
 
@@ -41,17 +42,7 @@ class ConnectionManager:
         self.chat_to_socket[chat_id].remove(websocket)
 
     async def send_message(self, user_id, user_message: dict):
-        # TODO save message
-        async_session = anext(get_async_session())
-        session = await async_session
-        stmt = insert(message).values(
-            value=user_message["value"],
-            sender=user_id,
-            chat_id=user_message["chat_id"]
-        )
-        await session.execute(stmt)
-        await session.commit()
-
+        await utils.save_message(user_id, user_message)
         for websocket in self.chat_to_socket[user_message["chat_id"]]:
             await websocket.send_text(json.dumps({"sender": user_id, **user_message}))
 
