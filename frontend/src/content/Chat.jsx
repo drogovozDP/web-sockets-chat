@@ -3,7 +3,7 @@ import axios from "axios";
 import {fetchToken, setToken} from "./Auth";
 import "./css/Chat.css";
 // import { ws } from "./App"
-import { appendMessage } from "./ChatUtils";
+import { appendMessage, setUncheckedMessageAmount } from "./ChatUtils";
 
 
 export default class Chat extends React.Component {
@@ -49,17 +49,13 @@ export default class Chat extends React.Component {
             }
         }
         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-        await axios.post("http://127.0.0.1:8000/chat", users )
-            // .then(function (response) {
-            //     if (response.data.access_token) {
-            //         setToken(response.data.access_token);
-            //         navigate("/profile");
-            //     }
-            // })
-            // .catch(r => document.getElementById("status").textContent = r.response.data.detail)
-        // checkboxes.forEach(function(check_li, _) {
-        //     console.log(check_li)
-        // })
+
+        // add new chat to the chat list
+        let response = await axios.post("http://127.0.0.1:8000/chat", users )
+        let chat_li = document.createElement("li")
+        let chat_list_ul = document.getElementById("chat_list")
+        chat_li.textContent = response.data.chat_details.chat_name
+        chat_list_ul.insertBefore(chat_li, chat_list_ul.lastChild)
     }
 
 
@@ -71,18 +67,25 @@ export default class Chat extends React.Component {
         const url = `ws://127.0.0.1:8000/chat/ws/${this.state.user_id}`
         const ws = new WebSocket(url)
         ws.onmessage = (ev) => {
-            appendMessage(this.state.users, JSON.parse(ev.data))
+            let message = JSON.parse(ev.data)
+            console.log(message)
+            if (message.type === "send_message") {
+                appendMessage(this.state.users, message)
+            } else if (message.type === "notification") {
+                setUncheckedMessageAmount(message.chat_id, message.message_amount)
+            }
 
         };
         this.setState({ "ws": ws })
 
         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-        let response = await axios.get("http://127.0.0.1:8000/chat")
+        let chat_response = await axios.get("http://127.0.0.1:8000/chat")
         let chat_list = document.getElementById("chat_list")
-        for (let i = 0; i < response.data.length; i++) {
-            let chat = response.data[i]
+        for (let i = 0; i < chat_response.data.length; i++) {
+            let chat = chat_response.data[i]
             let chat_li = document.createElement("li")
-            chat_li.textContent = chat.name
+            chat_li.textContent = `${chat.name}: 0`
+            chat_li.setAttribute("id", `chat_${chat.id}`)
             chat_li.onclick = async () => {
                 this.setState({ chat_id: chat.id })
                 let message = JSON.stringify({
@@ -91,6 +94,7 @@ export default class Chat extends React.Component {
                 })
                 this.state.ws.send(message)
                 this.display_content("chat_block")
+                setUncheckedMessageAmount(chat.id, 0)
 
                 // set new user's names and surnames.
                 let user_names = await axios.get(`http://127.0.0.1:8000/chat/${chat.id}/users`)
@@ -112,11 +116,22 @@ export default class Chat extends React.Component {
             chat_list.appendChild(chat_li)
         }
 
+        // set unchecked messages
+        let unchecked_messages_response = await axios.get("http://127.0.0.1:8000/chat/unchecked")
+        for (let i = 0; i < unchecked_messages_response.data.length; i++) {
+            let unchecked_chat = unchecked_messages_response.data[i]
+            setUncheckedMessageAmount(
+                unchecked_chat.chat_id,
+                unchecked_chat.unchecked_messages
+            )
+
+        }
+
         // 'create new chat' button.
         let new_chat_li = document.createElement("li")
         new_chat_li.textContent = "New chat"
         new_chat_li.onclick = async () => {
-            response = await axios.get("http://127.0.0.1:8000/auth/api/users")
+            let response = await axios.get("http://127.0.0.1:8000/auth/api/users")
             let checkboxes = document.getElementById("checkboxes")
             response.data.forEach(function(user, _) {
                 let user_li = document.createElement("li")

@@ -35,7 +35,7 @@ async def create_user(user: UserCreate, session: AsyncSession):
 async def authenticate_user(email: str, password: str, session: AsyncSession):
     user = await get_user_by_email(email, session)
 
-    if len(user) == 0 or not hash.bcrypt.verify(password, user.hashed_password):
+    if user is None or not hash.bcrypt.verify(password, user.hashed_password):
         return False
 
     return user

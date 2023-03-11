@@ -31,7 +31,16 @@ async def create_chat(
         session: AsyncSession = Depends(get_async_session),
         user: UserRead = Depends(get_current_user)
 ):
-    return await utils.create_chat(users, session, user)
+    chat_details = await utils.create_chat(users, session, user)
+    return {"status": 200, "details": "Chat has been created.", "chat_details": chat_details}
+
+
+@router.get("/unchecked")
+async def get_amount_of_unchecked_messages(
+        user: UserRead = Depends(get_current_user),
+        session: AsyncSession = Depends(get_async_session),
+):
+    return await utils.get_amount_of_unchecked_messages(user.id, session)
 
 
 # TODO make pagination: 20 messages, offset 0 -> 20 -> 40...
@@ -59,10 +68,10 @@ async def get_users_in_chat(
 
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    await manager.accept_connection(websocket)
+    await manager.accept_connection(websocket, user_id)
     try:
         while True:
             data = await websocket.receive_text()
-            await manager.broadcast(user_id, data, websocket)
+            await manager.broadcast(user_id, data)
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        manager.disconnect(user_id)

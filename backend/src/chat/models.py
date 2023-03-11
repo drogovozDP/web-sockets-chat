@@ -33,11 +33,10 @@ message = Table(
 )
 
 # TODO we don't need chat_id
-unchecked_messages = Table(
-    "unchecked_messages",
+unchecked_message = Table(
+    "unchecked_message",
     metadata,
     Column("id", Integer, primary_key=True),
     Column("message_id", Integer, ForeignKey(message.c.id)),
     Column("user_id", Integer, ForeignKey(auth_user.c.id)),
-    # Column("chat_id", Integer, ForeignKey(chat.c.id)),
 )
