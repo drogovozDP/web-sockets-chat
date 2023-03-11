@@ -95,7 +95,15 @@
 }
 
 /* button for sending messages */
-#Chat > nav > ul:nth-child(2) > li:nth-child(2) > button {
+#edit {
+    display: none;
+}
+
+#cancel {
+    display: none;
+}
+
+.send_button {
     background-color: #14202a;
     border: none;
     color: #c5c5c5;
@@ -105,7 +113,7 @@
     justify-content:center;
 }
 
-#Chat > nav > ul:nth-child(2) > li:nth-child(2) > button:hover {
+.send_button:hover {
     background-color: #1e303f;
     cursor: pointer;
 }

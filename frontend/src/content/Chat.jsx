@@ -3,13 +3,13 @@ import axios from "axios";
 import {fetchToken, setToken} from "./Auth";
 import "./css/Chat.css";
 // import { ws } from "./App"
-import { appendMessage, setUncheckedMessageAmount } from "./ChatUtils";
 
 
 export default class Chat extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            message_id: 0,
             content_names: [
                 "chat_block",
                 "new_user_block",
@@ -18,14 +18,56 @@ export default class Chat extends React.Component {
         }
     }
 
+    appendMessage = (users, message) => {
+        let messages_ul = document.getElementById("messages")
+        let message_li = document.createElement("li")
+        message_li.setAttribute("id", message.id)
+        message_li.textContent = `${users[message.sender]["name"]} ${users[message.sender]["surname"]}: ${message.value}`
+        message_li.onclick = () => {
+            this.setState({ "message_id": message.id })
+            document.getElementById("send").style.display = "none"
+            document.getElementById("edit").style.display = "flex"
+            document.getElementById("cancel").style.display = "flex"
+        }
+        messages_ul.appendChild(message_li)
+
+    }
+
+
+    setUncheckedMessageAmount = (id, amount) => {
+        let chat_li = document.getElementById(`chat_${id}`)
+        let name = chat_li.textContent.split(":")
+        chat_li.textContent = `${name[0]}: ${amount}`
+    }
+
     sendMessage = () => {
-        let text = document.getElementById("input_text").value
+        let textbox = document.getElementById("input_text")
         let message = JSON.stringify({
             "type": "send_message",
             "chat_id": this.state.chat_id,
-            "value": text,
+            "value": textbox.value,
         })
         this.state.ws.send(message)
+        textbox.value = ""
+    }
+
+    editMessage = () => {
+        let textbox = document.getElementById("input_text")
+        let message = JSON.stringify({
+            "type": "edit_message",
+            "chat_id": this.state.chat_id,
+            "message_id": this.state.message_id,
+            "value": textbox.value,
+        })
+        this.state.ws.send(message)
+        textbox.value = ""
+    }
+
+    cancelEdit = () => {
+        this.setState({ "message_id": 0 })
+        document.getElementById("send").style.display = "flex"
+        document.getElementById("edit").style.display = "none"
+        document.getElementById("cancel").style.display = "none"
     }
 
     componentWillUnmount() {
@@ -66,15 +108,18 @@ export default class Chat extends React.Component {
         this.setState({ "user_id": r.data.id })
         const url = `ws://127.0.0.1:8000/chat/ws/${this.state.user_id}`
         const ws = new WebSocket(url)
-        ws.onmessage = (ev) => {
+        ws.onmessage = async (ev) => {
             let message = JSON.parse(ev.data)
-            console.log(message)
             if (message.type === "send_message") {
-                appendMessage(this.state.users, message)
+                this.appendMessage(this.state.users, message)
             } else if (message.type === "notification") {
-                setUncheckedMessageAmount(message.chat_id, message.message_amount)
+                this.setUncheckedMessageAmount(message.chat_id, message.message_amount)
+            } else if (message.type === "edit_message") {
+                let r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
+                    {"accept": "application/json"})
+                document.getElementById(this.state.message_id)
+                    .textContent = `${r.data.name} ${r.data.surname}: ${message.value}`
             }
-
         };
         this.setState({ "ws": ws })
 
@@ -94,7 +139,7 @@ export default class Chat extends React.Component {
                 })
                 this.state.ws.send(message)
                 this.display_content("chat_block")
-                setUncheckedMessageAmount(chat.id, 0)
+                this.setUncheckedMessageAmount(chat.id, 0)
 
                 // set new user's names and surnames.
                 let user_names = await axios.get(`http://127.0.0.1:8000/chat/${chat.id}/users`)
@@ -110,7 +155,7 @@ export default class Chat extends React.Component {
                 messages_ul.innerHTML = ""
                 // for (let i = 0; i < 10; i ++)
                 for (let i = 0; i < messages.data.length; i++) {
-                    appendMessage(this.state.users, messages.data[i])
+                    this.appendMessage(this.state.users, messages.data[i])
                 }
             }
             chat_list.appendChild(chat_li)
@@ -120,7 +165,7 @@ export default class Chat extends React.Component {
         let unchecked_messages_response = await axios.get("http://127.0.0.1:8000/chat/unchecked")
         for (let i = 0; i < unchecked_messages_response.data.length; i++) {
             let unchecked_chat = unchecked_messages_response.data[i]
-            setUncheckedMessageAmount(
+            this.setUncheckedMessageAmount(
                 unchecked_chat.chat_id,
                 unchecked_chat.unchecked_messages
             )
@@ -171,7 +216,9 @@ export default class Chat extends React.Component {
                         </li>
                         <li>
                             <textarea id="input_text" placeholder="This is the default text"></textarea>
-                            <button onClick={this.sendMessage}>SEND</button>
+                            <button id="send" className="send_button" onClick={this.sendMessage}>SEND</button>
+                            <button id="edit" className="send_button" onClick={this.editMessage}>EDIT</button>
+                            <button id="cancel" className="send_button" onClick={this.cancelEdit}>CANCEL</button>
                         </li>
                     </ul>
                     <ul id="new_user_block" className="block_content">

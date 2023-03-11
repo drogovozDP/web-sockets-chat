@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from sqlalchemy import Table, Column, Integer, String, TIMESTAMP, ForeignKey, Boolean, MetaData
 
 from backend.src.auth.models import auth_user
@@ -29,7 +27,7 @@ message = Table(
     Column("value", String, nullable=False),
     Column("sender", Integer, ForeignKey(auth_user.c.id)),
     Column("chat_id", Integer, ForeignKey(chat.c.id)),
-    Column("timestamp", TIMESTAMP, default=datetime.utcnow),
+    Column("timestamp", TIMESTAMP, nullable=False),
 )
 
 # TODO we don't need chat_id

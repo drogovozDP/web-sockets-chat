@@ -44,7 +44,12 @@ class ConnectionManager:
         del self.userid_to_chat[user_id]
         self.chat_to_userid[chat_id].remove(user_id)
 
-    def get_online_and_offline_users(self, user_ids, chat_id):
+    async def edit_message(self, user_message: dict):
+        await utils.edit_message(user_message["message_id"], user_message["value"])
+        for userid in self.chat_to_userid[user_message["chat_id"]]:
+            await self.userid_to_socket[userid].send_text(json.dumps(user_message))
+
+    async def get_online_and_offline_users(self, user_ids, chat_id):
         online, offline = [], []
         for user_id in user_ids:
             if user_id in self.chat_to_userid[chat_id]:
@@ -60,8 +65,6 @@ class ConnectionManager:
     async def propagate_notification(self, chat_id, offline_users):
         for userid in offline_users:
             message_amount = await utils.get_amount_of_unchecked_messages_in_one_chat(userid, chat_id)
-            print(message_amount, "asldfkj;aslkjdf;alskjdf;alksjdf;lakjsd;flkjasd;lfkja;sldkfj;alskdjf;ajksd;lj")
-
             if userid in self.userid_to_socket:
                 await self.userid_to_socket[userid].send_text(json.dumps({
                     "type": "notification",
@@ -72,9 +75,9 @@ class ConnectionManager:
     async def send_message(self, user_id, user_message: dict):
         chat_id = user_message["chat_id"]
         user_ids = await utils.get_users_in_chat_socket(chat_id)
-        online, offline = self.get_online_and_offline_users(user_ids, chat_id)
-        await utils.save_message(user_id, user_message, offline)
-        await self.propagate_message(user_id, user_message, online)
+        online, offline = await self.get_online_and_offline_users(user_ids, chat_id)
+        message_id = await utils.save_message(user_id, user_message, offline)
+        await self.propagate_message(user_id, {"id": message_id, **user_message}, online)
         await self.propagate_notification(user_message["chat_id"], offline)
 
     async def broadcast(self, user_id: int, user_message: str):
@@ -86,6 +89,9 @@ class ConnectionManager:
 
         elif message_type == "send_message":
             await self.send_message(user_id, user_message)
+
+        elif message_type == "edit_message":
+            await self.edit_message(user_message)
 
 
 # TODO create services with sockets and db queries

@@ -1,6 +1,7 @@
 from typing import List
+from datetime import datetime
 
-from sqlalchemy import select, insert, delete, and_, func
+from sqlalchemy import select, insert, update, delete, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.auth.models import auth_user
@@ -127,9 +128,23 @@ async def save_message(user_id: int, user_message: dict, offline_users: List[int
     stmt = insert(message).values(
         value=user_message["value"],
         sender=user_id,
-        chat_id=user_message["chat_id"]
+        chat_id=user_message["chat_id"],
+        timestamp=datetime.utcnow(),
     ).returning(message.c.id)
     result = await session.execute(stmt)
     await session.commit()
+    message_id = result.fetchone()[0]
+    await save_unchecked_message(message_id, offline_users)
+    return message_id
 
-    await save_unchecked_message(result.fetchone()[0], offline_users)
+
+async def edit_message(message_id: int, value: str):
+    async_session = anext(get_async_session())
+    session = await async_session
+    query = select(message.c.timestamp).where(message.c.id == message_id)
+    result = await session.execute(query)
+    timestamp = result.fetchone()[0]
+    print(timestamp, "a" * 20)
+    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp)
+    await session.execute(stmt)
+    await session.commit()

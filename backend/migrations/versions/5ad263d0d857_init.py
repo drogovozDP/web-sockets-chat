@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 6df125f3ae64
+Revision ID: 5ad263d0d857
 Revises: 
-Create Date: 2023-03-11 09:25:26.378882
+Create Date: 2023-03-11 21:23:17.253992
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '6df125f3ae64'
+revision = '5ad263d0d857'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -40,7 +40,7 @@ def upgrade() -> None:
     sa.Column('value', sa.String(), nullable=False),
     sa.Column('sender', sa.Integer(), nullable=True),
     sa.Column('chat_id', sa.Integer(), nullable=True),
-    sa.Column('timestamp', sa.TIMESTAMP(), nullable=True),
+    sa.Column('timestamp', sa.TIMESTAMP(), nullable=False),
     sa.ForeignKeyConstraint(['chat_id'], ['chat.id'], ),
     sa.ForeignKeyConstraint(['sender'], ['auth_user.id'], ),
     sa.PrimaryKeyConstraint('id')
