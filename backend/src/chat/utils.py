@@ -144,7 +144,6 @@ async def edit_message(message_id: int, value: str):
     query = select(message.c.timestamp).where(message.c.id == message_id)
     result = await session.execute(query)
     timestamp = result.fetchone()[0]
-    print(timestamp, "a" * 20)
     stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp)
     await session.execute(stmt)
     await session.commit()

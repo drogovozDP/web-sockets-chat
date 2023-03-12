@@ -51,16 +51,22 @@ export default class Chat extends React.Component {
         textbox.value = ""
     }
 
-    editMessage = () => {
+    editMessage = async () => {
         let textbox = document.getElementById("input_text")
+        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
+        const r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
+            {"accept": "application/json"})
         let message = JSON.stringify({
             "type": "edit_message",
             "chat_id": this.state.chat_id,
             "message_id": this.state.message_id,
             "value": textbox.value,
+            "name": r.data.name,
+            "surname": r.data.surname,
         })
         this.state.ws.send(message)
         textbox.value = ""
+        this.cancelEdit()
     }
 
     cancelEdit = () => {
@@ -117,8 +123,8 @@ export default class Chat extends React.Component {
             } else if (message.type === "edit_message") {
                 let r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
                     {"accept": "application/json"})
-                document.getElementById(this.state.message_id)
-                    .textContent = `${r.data.name} ${r.data.surname}: ${message.value}`
+                document.getElementById(message.message_id)
+                    .textContent = `${message.name} ${message.surname}: ${message.value}`
             }
         };
         this.setState({ "ws": ws })
