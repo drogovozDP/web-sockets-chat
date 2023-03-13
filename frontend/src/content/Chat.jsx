@@ -4,7 +4,6 @@ import {fetchToken, setToken} from "./Auth";
 import "./css/Chat.css";
 // import { ws } from "./App"
 
-
 export default class Chat extends React.Component {
     constructor(props) {
         super(props);
