@@ -11,48 +11,50 @@ from backend.src.database import get_async_session
 
 class ConnectionManager:
     def __init__(self):
+        # TODO maybe we should handle truly offline users
         self.userid_to_socket: Dict[int, WebSocket] = {}
-        self.chat_to_userid: Dict[int, List[int]] = {}
+        self.chat_to_online_userid: Dict[int, List[int]] = {}  # TODO replace List with Set
         self.userid_to_chat: Dict[int, int] = {}
 
     def create_chat_if_not_exists(self, chat_id):
-        if chat_id not in self.chat_to_userid:
-            self.chat_to_userid[chat_id] = []
+        if chat_id not in self.chat_to_online_userid:
+            self.chat_to_online_userid[chat_id] = []
 
     def delete_chat_if_empty(self, chat_id):
-        if len(self.chat_to_userid[chat_id]) == 0:
-            del self.chat_to_userid[chat_id]
+        if len(self.chat_to_online_userid[chat_id]) == 0:
+            del self.chat_to_online_userid[chat_id]
 
     async def accept_connection(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
         self.userid_to_socket[user_id] = websocket
         self.create_chat_if_not_exists(0)
-        self.chat_to_userid[0].append(user_id)
+        self.chat_to_online_userid[0].append(user_id)
         self.userid_to_chat[user_id] = 0
 
     async def connect_to_chat(self, chat_id: int, user_id: int):
         old_chat_id = self.userid_to_chat[user_id]  # find where is the socket now.
-        self.chat_to_userid[old_chat_id].remove(user_id)  # remove the socket from the current chat.
+        self.chat_to_online_userid[old_chat_id].remove(user_id)  # remove the socket from the current chat.
         self.delete_chat_if_empty(old_chat_id)
         self.create_chat_if_not_exists(chat_id)
         self.userid_to_chat[user_id] = chat_id  # set new chat id for the socket.
-        self.chat_to_userid[chat_id].append(user_id)  # add to the new chat the socket.
+        self.chat_to_online_userid[chat_id].append(user_id)  # add to the new chat the socket.
 
     def disconnect(self, user_id):
         del self.userid_to_socket[user_id]
         chat_id = self.userid_to_chat[user_id]
         del self.userid_to_chat[user_id]
-        self.chat_to_userid[chat_id].remove(user_id)
+        self.chat_to_online_userid[chat_id].remove(user_id)
 
     async def edit_message(self, user_message: dict):
+        # TODO make validation for users and make join with user.name, user.surname for frontend
         await utils.edit_message(user_message["message_id"], user_message["value"])
-        for userid in self.chat_to_userid[user_message["chat_id"]]:
+        for userid in self.chat_to_online_userid[user_message["chat_id"]]:
             await self.userid_to_socket[userid].send_text(json.dumps(user_message))
 
-    async def get_online_and_offline_users(self, user_ids, chat_id):
+    async def get_online_and_offline_users(self, user_ids, chat_id):  # TODO try to make it with a Set
         online, offline = [], []
         for user_id in user_ids:
-            if user_id in self.chat_to_userid[chat_id]:
+            if user_id in self.chat_to_online_userid[chat_id]:
                 online.append(user_id)
             else:
                 offline.append(user_id)

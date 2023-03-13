@@ -1,5 +1,6 @@
 from typing import List
-from datetime import datetime
+# from datetime import datetime
+import datetime
 
 from sqlalchemy import select, insert, update, delete, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -129,7 +130,7 @@ async def save_message(user_id: int, user_message: dict, offline_users: List[int
         value=user_message["value"],
         sender=user_id,
         chat_id=user_message["chat_id"],
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.datetime.utcnow(),
     ).returning(message.c.id)
     result = await session.execute(stmt)
     await session.commit()
@@ -143,7 +144,7 @@ async def edit_message(message_id: int, value: str):
     session = await async_session
     query = select(message.c.timestamp).where(message.c.id == message_id)
     result = await session.execute(query)
-    timestamp = result.fetchone()[0]
-    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp)
+    timestamp = result.fetchone()[0]  # TODO make sort
+    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=datetime.date(1995, 12, 1))
     await session.execute(stmt)
     await session.commit()
