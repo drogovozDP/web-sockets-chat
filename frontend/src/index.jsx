@@ -1,9 +1,14 @@
-import React from "react";
-import { render } from 'react-dom';
-import "./css/main.css";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import './index.css';
+import App from './content/App';
+import reportWebVitals from './reportWebVitals';
 
-import App from "./App"
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
 
-
-const rootElement = document.getElementById("root")
-render(<App />, rootElement)
+reportWebVitals();

@@ -4,7 +4,7 @@ import os
 load_dotenv()
 
 SECRET_AUTH = os.environ.get("SECRET_AUTH")
-SECRET_MANAGER = os.environ.get("SECRET_MANAGER")
+ALGORITHM = os.environ.get("ALGORITHM")
 LIFETIME_SECONDS = int(os.environ.get("LIFETIME_SECONDS"))
 
 DB_USER = os.environ.get("DB_USER")

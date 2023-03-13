@@ -176,7 +176,7 @@ test = ["anyio[trio] (>=3.2.1,<4.0.0)", "black (==22.10.0)", "coverage[toml] (>=
 
 [[package]]
 name = "fastapi-users"
-version = "10.3.0"
+version = "10.4.0"
 description = "Ready-to-use and customizable users management for FastAPI"
 category = "main"
 optional = false
@@ -193,7 +193,7 @@ python-multipart = "0.0.5"
 
 [package.extras]
 beanie = ["fastapi-users-db-beanie (>=1.0.0)"]
-oauth = ["httpx-oauth (>=0.4,<0.11)"]
+oauth = ["httpx-oauth (>=0.4,<0.12)"]
 redis = ["redis (>=4.3.3,<5.0.0)"]
 sqlalchemy = ["fastapi-users-db-sqlalchemy (>=4.0.0)"]
 
@@ -489,6 +489,14 @@ h11 = ">=0.8"
 standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "uvloop (>=0.14.0,!=0.15.0,!=0.15.1)", "watchfiles (>=0.13)", "websockets (>=10.4)"]
 
 [[package]]
+name = "websockets"
+version = "10.4"
+description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "zipp"
 version = "3.12.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -503,7 +511,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "240a6e7f85d0125e501deb9249250cd08e37adfdfbbcce43c906b387137b5869"
+content-hash = "563058d208657eaafcbe962e42b337154fe4e80460ebd6a538f0a77d74a8c502"
 
 [metadata.files]
 alembic = []
@@ -547,4 +555,5 @@ sqlalchemy = []
 starlette = []
 typing-extensions = []
 uvicorn = []
+websockets = []
 zipp = []
