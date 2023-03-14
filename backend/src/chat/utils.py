@@ -2,7 +2,7 @@ from typing import List
 # from datetime import datetime
 import datetime
 
-from sqlalchemy import select, insert, update, delete, and_, func
+from sqlalchemy import select, insert, update, delete, and_, func, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.auth.models import auth_user
@@ -49,18 +49,24 @@ async def get_messages_from_specific_chat(
     subquery = select(user_chat.c.chat_id).where(
         and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id)
     ).subquery()
-    query = select(message).where(message.c.chat_id == subquery)
+
+    query = select(message, auth_user.c.name, auth_user.c.surname) \
+        .where(message.c.chat_id == subquery) \
+        .join(auth_user).filter(auth_user.c.id == message.c.sender) \
+        .order_by(asc(message.c.timestamp))
     result = await session.execute(query)
     return result.all()
 
 
 async def get_amount_of_unchecked_messages(
         user_id: int,
+        chat_id: int,
         session: AsyncSession,
 ):
     unchecked = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == user_id).subquery()
     query = select(message.c.chat_id, func.count(message.c.value).label("unchecked_messages"))\
         .join(unchecked).filter(message.c.id == unchecked.c.message_id)\
+        .where(message.c.chat_id == chat_id)\
         .group_by(message.c.chat_id)
     result = await session.execute(query)
     return result.all()
@@ -94,48 +100,68 @@ async def get_users_in_chat(
     return result
 
 
-async def get_users_in_chat_socket(chat_id: int):
+async def get_online_users_in_chat(chat_id: int, online_user_ids):
     async_session = anext(get_async_session())
     session = await async_session
-    return [user_id[0] for user_id in await get_users_in_chat(chat_id, session)]
+    chat_user_ids = select(user_chat.c.user_id).where(user_chat.c.chat_id == chat_id).subquery()
+    query = select(chat_user_ids).where(chat_user_ids.c.user_id.in_(online_user_ids))
+    result = await session.execute(query)
+    result = result.all()
+    return [user[0] for user in result]
+
+
+async def get_sender_name_surname(user_id):
+    async_session = anext(get_async_session())
+    session = await async_session
+    query = select(auth_user.c.name, auth_user.c.surname).where(auth_user.c.id == user_id)
+    result = await session.execute(query)
+    result = result.all()
+    return result[0]
 
 
 async def check_messages_in_the_chat(user_id: int, chat_id: int):
     async_session = anext(get_async_session())
     session = await async_session
-    unchecked = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == user_id).subquery()
-    checked_message = select(message.c.id).join(unchecked)\
-        .filter(unchecked.c.message_id == message.c.id)\
-        .where(message.c.chat_id == chat_id)\
-        .subquery()
-    stmt = delete(unchecked_message).where(unchecked_message.c.message_id.in_(checked_message))
+
+    unchecked_ids = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == user_id).subquery()
+
+    unchecked_messages = select(message.c.id).join(unchecked_ids) \
+        .filter(and_(message.c.chat_id == chat_id, unchecked_ids.c.message_id == message.c.id)).subquery()
+
+    to_delete = select(unchecked_message.c.id).join(unchecked_messages) \
+        .filter(unchecked_messages.c.id == unchecked_message.c.message_id) \
+        .where(unchecked_message.c.user_id == user_id).subquery()
+
+    stmt = delete(unchecked_message).where(unchecked_message.c.id.in_(to_delete))
+
     await session.execute(stmt)
     await session.commit()
 
 
-async def save_unchecked_message(message_id: int, offline_users: List[int]):
+async def save_unchecked_message(message_id: int, chat_id: int):
     async_session = anext(get_async_session())
     session = await async_session
+    users = await get_users_in_chat(chat_id, session)
     stmt = insert(unchecked_message).values([
-        {"message_id": message_id, "user_id": user_id} for user_id in offline_users
+        {"message_id": message_id, "user_id": user[0]} for user in users
     ])
     await session.execute(stmt)
     await session.commit()
 
 
-async def save_message(user_id: int, user_message: dict, offline_users: List[int]):
+async def save_message(user_id: int, chat_id: int, value: str):
     async_session = anext(get_async_session())
     session = await async_session
     stmt = insert(message).values(
-        value=user_message["value"],
+        value=value,
         sender=user_id,
-        chat_id=user_message["chat_id"],
+        chat_id=chat_id,
         timestamp=datetime.datetime.utcnow(),
     ).returning(message.c.id)
     result = await session.execute(stmt)
     await session.commit()
     message_id = result.fetchone()[0]
-    await save_unchecked_message(message_id, offline_users)
+    await save_unchecked_message(message_id, chat_id)
     return message_id
 
 

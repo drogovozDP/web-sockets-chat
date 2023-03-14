@@ -35,14 +35,6 @@ async def create_chat(
     return {"status": 200, "details": "Chat has been created.", "chat_details": chat_details}
 
 
-@router.get("/unchecked")
-async def get_amount_of_unchecked_messages(
-        user: UserRead = Depends(get_current_user),
-        session: AsyncSession = Depends(get_async_session),
-):
-    return await utils.get_amount_of_unchecked_messages(user.id, session)
-
-
 # TODO make pagination: 20 messages, offset 0 -> 20 -> 40...
 @router.get("/{chat_id}")
 async def get_messages_from_specific_chat(
@@ -64,6 +56,15 @@ async def get_users_in_chat(
     if len([1 for db_user in result if db_user[0] == user.id]) == 0:
         raise HTTPException(status_code=401, detail="Invalid Credentials.")
     return result
+
+
+@router.get("/{chat_id}/unchecked")
+async def get_amount_of_unchecked_messages(
+        chat_id: int,
+        user: UserRead = Depends(get_current_user),
+        session: AsyncSession = Depends(get_async_session),
+):
+    return await utils.get_amount_of_unchecked_messages(user.id, chat_id, session)
 
 
 @router.websocket("/ws/{user_id}")

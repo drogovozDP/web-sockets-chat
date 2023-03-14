@@ -2,13 +2,13 @@ import React from "react";
 import axios from "axios";
 import {fetchToken, setToken} from "./Auth";
 import "./css/Chat.css";
-// import { ws } from "./App"
 
 export default class Chat extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             message_id: 0,
+            chat_id: 0,
             content_names: [
                 "chat_block",
                 "new_user_block",
@@ -17,11 +17,27 @@ export default class Chat extends React.Component {
         }
     }
 
-    appendMessage = (users, message) => {
+    receiveMessage = (message) => {
+        if (message.type === "send_message") {
+            if (message.chat_id === this.state.chat_id) {
+                this.appendMessage(message)
+                this.check_messages()
+            } else {
+                this.setUncheckedMessageAmount(message.chat_id)
+            }
+        } else if (message.type === "edit_message") {
+//             let r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
+//                 {"accept": "application/json"})
+//             document.getElementById(message.message_id)
+//                 .textContent = `${message.name} ${message.surname}: ${message.value}`
+        }
+    }
+
+    appendMessage = (message) => {
         let messages_ul = document.getElementById("messages")
         let message_li = document.createElement("li")
         message_li.setAttribute("id", message.id)
-        message_li.textContent = `${users[message.sender]["name"]} ${users[message.sender]["surname"]}: ${message.value}`
+        message_li.textContent = `${message.name} ${message.surname}: ${message.value}`
         message_li.onclick = () => {
             this.setState({ "message_id": message.id })
             document.getElementById("send").style.display = "none"
@@ -33,11 +49,26 @@ export default class Chat extends React.Component {
     }
 
 
-    setUncheckedMessageAmount = (id, amount) => {
-        let chat_li = document.getElementById(`chat_${id}`)
-        let name = chat_li.textContent.split(":")
-        chat_li.textContent = `${name[0]}: ${amount}`
+    setUncheckedMessageAmount = async (id) => {
+        axios.get(`http://127.0.0.1:8000/chat/${id}/unchecked`)
+        .then(function(r) {
+            let chat_li = document.getElementById(`chat_${id}`)
+            let name = chat_li.textContent.split(":")
+            chat_li.textContent = `${name[0]}: ${r.data.length == 0 ? 0 : r.data[0].unchecked_messages}`
+        })
     }
+
+    check_messages = () => {
+        let message = JSON.stringify({
+            "type": "check_message",
+            "chat_id": this.state.chat_id,
+        })
+        this.state.ws.send(message)
+        let chat_li = document.getElementById(`chat_${this.state.chat_id}`)
+        let name = chat_li.textContent.split(":")
+        chat_li.textContent = `${name[0]}: 0`
+    }
+
 
     sendMessage = () => {
         let textbox = document.getElementById("input_text")
@@ -60,8 +91,6 @@ export default class Chat extends React.Component {
             "chat_id": this.state.chat_id,
             "message_id": this.state.message_id,
             "value": textbox.value,
-            "name": r.data.name,
-            "surname": r.data.surname,
         })
         this.state.ws.send(message)
         textbox.value = ""
@@ -105,30 +134,25 @@ export default class Chat extends React.Component {
         chat_list_ul.insertBefore(chat_li, chat_list_ul.lastChild)
     }
 
+    create_websocket_connection = () => {
+        const url = `ws://127.0.0.1:8000/chat/ws/${this.state.user_id}`
+        const ws = new WebSocket(url)
+        ws.onmessage = async (ev) => {
+            let message = JSON.parse(ev.data)
+            this.receiveMessage(message)
+        };
+        this.setState({ "ws": ws })
+    }
+
 
     async componentDidMount() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
         const r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
             {"accept": "application/json"})
         this.setState({ "user_id": r.data.id })
-        const url = `ws://127.0.0.1:8000/chat/ws/${this.state.user_id}`
-        const ws = new WebSocket(url)
-        ws.onmessage = async (ev) => {
-            let message = JSON.parse(ev.data)
-            if (message.type === "send_message") {
-                this.appendMessage(this.state.users, message)
-            } else if (message.type === "notification") {
-                this.setUncheckedMessageAmount(message.chat_id, message.message_amount)
-            } else if (message.type === "edit_message") {
-                let r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
-                    {"accept": "application/json"})
-                document.getElementById(message.message_id)
-                    .textContent = `${message.name} ${message.surname}: ${message.value}`
-            }
-        };
-        this.setState({ "ws": ws })
 
-        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
+        this.create_websocket_connection()
+
         let chat_response = await axios.get("http://127.0.0.1:8000/chat")
         let chat_list = document.getElementById("chat_list")
         for (let i = 0; i < chat_response.data.length; i++) {
@@ -136,45 +160,21 @@ export default class Chat extends React.Component {
             let chat_li = document.createElement("li")
             chat_li.textContent = `${chat.name}: 0`
             chat_li.setAttribute("id", `chat_${chat.id}`)
+            this.setUncheckedMessageAmount(chat.id)
             chat_li.onclick = async () => {
                 this.setState({ chat_id: chat.id })
-                let message = JSON.stringify({
-                    "type": "select_chat",
-                    "value": chat.id,
-                })
-                this.state.ws.send(message)
                 this.display_content("chat_block")
-                this.setUncheckedMessageAmount(chat.id, 0)
-
-                // set new user's names and surnames.
-                let user_names = await axios.get(`http://127.0.0.1:8000/chat/${chat.id}/users`)
-                let users = {}
-                user_names.data.forEach(function(user, _) {
-                    users[user["id"]] = {"name": user["name"], "surname": user["surname"]}
-                })
-                this.setState({ "users": users })
+                this.check_messages()
 
                 // add messages from current chat.
                 let messages = await axios.get(`http://127.0.0.1:8000/chat/${chat.id}`)
                 let messages_ul = document.getElementById("messages")
                 messages_ul.innerHTML = ""
-                // for (let i = 0; i < 10; i ++)
                 for (let i = 0; i < messages.data.length; i++) {
-                    this.appendMessage(this.state.users, messages.data[i])
+                    this.appendMessage(messages.data[i])
                 }
             }
             chat_list.appendChild(chat_li)
-        }
-
-        // set unchecked messages
-        let unchecked_messages_response = await axios.get("http://127.0.0.1:8000/chat/unchecked")
-        for (let i = 0; i < unchecked_messages_response.data.length; i++) {
-            let unchecked_chat = unchecked_messages_response.data[i]
-            this.setUncheckedMessageAmount(
-                unchecked_chat.chat_id,
-                unchecked_chat.unchecked_messages
-            )
-
         }
 
         // 'create new chat' button.
