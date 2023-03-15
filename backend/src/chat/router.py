@@ -27,11 +27,10 @@ async def get_user_chat_list(
 
 @router.post("/")
 async def create_chat(
+        user: int,
         users: List[int],
-        session: AsyncSession = Depends(get_async_session),
-        user: UserRead = Depends(get_current_user)
 ):
-    chat_details = await utils.create_chat(users, session, user)
+    chat_details = await utils.create_chat(users, user)
     return {"status": 200, "details": "Chat has been created.", "chat_details": chat_details}
 
 

@@ -3,6 +3,7 @@ import axios from "axios";
 import {fetchToken, setToken} from "./Auth";
 import "./css/Chat.css";
 
+
 export default class Chat extends React.Component {
     constructor(props) {
         super(props);
@@ -26,35 +27,56 @@ export default class Chat extends React.Component {
                 this.setUncheckedMessageAmount(message.chat_id)
             }
         } else if (message.type === "edit_message") {
-//             let r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
-//                 {"accept": "application/json"})
-//             document.getElementById(message.message_id)
-//                 .textContent = `${message.name} ${message.surname}: ${message.value}`
+            if (message.chat_id === this.state.chat_id)
+                this.setNewMessageValue(message)
+        } else if (message.type === "create_chat") {
+            this.addChatButton(message.chat_id, message.chat_name)
         }
+    }
+
+    displayButtons = (name) => {
+        let edit = name === "edit" ? "flex" : "none"
+        let send = name === "send" ? "flex" : "none"
+        document.getElementById("send").style.display = send
+        document.getElementById("edit").style.display = edit
+        document.getElementById("cancel").style.display = edit
+    }
+
+    setNewMessageValue = (message) => {
+        let message_li = document.getElementById(message.message_id)
+        message_li.firstChild.lastChild.textContent = message.value
     }
 
     appendMessage = (message) => {
         let messages_ul = document.getElementById("messages")
         let message_li = document.createElement("li")
+        let message_li_ul = document.createElement("ul")
+        let avatar = document.createElement("li")
+        let content = document.createElement("li")
+
         message_li.setAttribute("id", message.id)
-        message_li.textContent = `${message.name} ${message.surname}: ${message.value}`
+        avatar.textContent = `${message.name} ${message.surname}`
+        content.textContent = message.value
+
         message_li.onclick = () => {
             this.setState({ "message_id": message.id })
-            document.getElementById("send").style.display = "none"
-            document.getElementById("edit").style.display = "flex"
-            document.getElementById("cancel").style.display = "flex"
+            this.displayButtons("edit")
+            document.getElementById("input_text").value = message_li.firstChild.lastChild.textContent
         }
+
+        message_li_ul.appendChild(avatar)
+        message_li_ul.appendChild(content)
+        message_li.append(message_li_ul)
         messages_ul.appendChild(message_li)
 
     }
-
 
     setUncheckedMessageAmount = async (id) => {
         axios.get(`http://127.0.0.1:8000/chat/${id}/unchecked`)
         .then(function(r) {
             let chat_li = document.getElementById(`chat_${id}`)
             let name = chat_li.textContent.split(":")
-            chat_li.textContent = `${name[0]}: ${r.data.length == 0 ? 0 : r.data[0].unchecked_messages}`
+            chat_li.textContent = `${name[0]}: ${r.data.length === 0 ? 0 : r.data[0].unchecked_messages}`
         })
     }
 
@@ -83,9 +105,6 @@ export default class Chat extends React.Component {
 
     editMessage = async () => {
         let textbox = document.getElementById("input_text")
-        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-        const r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
-            {"accept": "application/json"})
         let message = JSON.stringify({
             "type": "edit_message",
             "chat_id": this.state.chat_id,
@@ -99,9 +118,8 @@ export default class Chat extends React.Component {
 
     cancelEdit = () => {
         this.setState({ "message_id": 0 })
-        document.getElementById("send").style.display = "flex"
-        document.getElementById("edit").style.display = "none"
-        document.getElementById("cancel").style.display = "none"
+        this.displayButtons("send")
+        document.getElementById("input_text").value = ""
     }
 
     componentWillUnmount() {
@@ -116,7 +134,29 @@ export default class Chat extends React.Component {
         })
     }
 
-    async create_new_chat() {
+    addChatButton = (chat_id, chat_name) => {
+        let chat_li = document.createElement("li")
+        let chat_list_ul = document.getElementById("chat_list")
+        chat_li.setAttribute("id", `chat_${chat_id}`)
+        chat_li.textContent = `${chat_name}: 0`
+        chat_li.onclick = async () => {
+            this.setState({ chat_id: chat_id })
+            this.display_content("chat_block")
+
+            // add messages from current chat.
+            let messages = await axios.get(`http://127.0.0.1:8000/chat/${chat_id}`)
+            let messages_ul = document.getElementById("messages")
+            messages_ul.innerHTML = ""
+            for (let i = 0; i < messages.data.length; i++) {
+                this.appendMessage(messages.data[i])
+            }
+            this.check_messages()
+        }
+        chat_list_ul.insertBefore(chat_li, chat_list_ul.lastChild)
+        this.setUncheckedMessageAmount(chat_id)
+    }
+
+    create_new_chat = async () => {
         let checkboxes = document.getElementById("checkboxes").getElementsByTagName("li")
         let users = []
         for (let i = 0; i < checkboxes.length; i++) {
@@ -124,14 +164,16 @@ export default class Chat extends React.Component {
                 users.push(parseInt(checkboxes[i].lastChild.value))
             }
         }
-        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
+//         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
 
         // add new chat to the chat list
-        let response = await axios.post("http://127.0.0.1:8000/chat", users )
-        let chat_li = document.createElement("li")
-        let chat_list_ul = document.getElementById("chat_list")
-        chat_li.textContent = response.data.chat_details.chat_name
-        chat_list_ul.insertBefore(chat_li, chat_list_ul.lastChild)
+        let message = JSON.stringify({
+            "type": "create_chat",
+            "value": users,
+        })
+        this.state.ws.send(message)
+//         let r = await axios.post("http://127.0.0.1:8000/chat", users )
+//         this.addChatButton(r.data.chat_details.chat_id, r.data.chat_details.chat_name)
     }
 
     create_websocket_connection = () => {
@@ -155,27 +197,6 @@ export default class Chat extends React.Component {
 
         let chat_response = await axios.get("http://127.0.0.1:8000/chat")
         let chat_list = document.getElementById("chat_list")
-        for (let i = 0; i < chat_response.data.length; i++) {
-            let chat = chat_response.data[i]
-            let chat_li = document.createElement("li")
-            chat_li.textContent = `${chat.name}: 0`
-            chat_li.setAttribute("id", `chat_${chat.id}`)
-            this.setUncheckedMessageAmount(chat.id)
-            chat_li.onclick = async () => {
-                this.setState({ chat_id: chat.id })
-                this.display_content("chat_block")
-                this.check_messages()
-
-                // add messages from current chat.
-                let messages = await axios.get(`http://127.0.0.1:8000/chat/${chat.id}`)
-                let messages_ul = document.getElementById("messages")
-                messages_ul.innerHTML = ""
-                for (let i = 0; i < messages.data.length; i++) {
-                    this.appendMessage(messages.data[i])
-                }
-            }
-            chat_list.appendChild(chat_li)
-        }
 
         // 'create new chat' button.
         let new_chat_li = document.createElement("li")
@@ -195,6 +216,11 @@ export default class Chat extends React.Component {
             this.display_content("new_user_block")
         }
         chat_list.appendChild(new_chat_li)
+
+        for (let i = 0; i < chat_response.data.length; i++) {
+            let chat = chat_response.data[i]
+            this.addChatButton(chat.id, chat.name)
+        }
     }
 
     render() {

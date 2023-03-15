@@ -1,12 +1,10 @@
 from typing import List
-# from datetime import datetime
 import datetime
 
 from sqlalchemy import select, insert, update, delete, and_, func, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.auth.models import auth_user
-from backend.src.auth.schemas import UserRead
 from backend.src.chat.models import user_chat, chat, message, unchecked_message
 from backend.src.database import get_async_session
 
@@ -16,29 +14,6 @@ async def get_user_chat_list(user_id: int, session: AsyncSession):
     query = select(chat).join(subquery).filter(subquery.c.chat_id == chat.c.id)
     result = await session.execute(query)
     return result.all()
-
-
-async def create_chat(
-        users: List[int],
-        session: AsyncSession,
-        user: UserRead
-):
-    query = select(auth_user).where(auth_user.c.id.in_(users))
-    result = await session.execute(query)
-    result = result.all()
-    chat_name = f"{user.name} {' '.join([user['name'] for user in result])}"
-    stmt = insert(chat).values(
-        name=chat_name
-    ).returning(chat.c.id)
-    result = await session.execute(stmt)
-    chat_id = result.fetchone()[0]
-
-    stmt = insert(user_chat).values([{"user_id": user.id, "chat_id": chat_id}] + [
-        {"user_id": user, "chat_id": chat_id} for user in users
-    ])
-    await session.execute(stmt)
-    await session.commit()
-    return {"chat_name": chat_name}
 
 
 async def get_messages_from_specific_chat(
@@ -70,6 +45,31 @@ async def get_amount_of_unchecked_messages(
         .group_by(message.c.chat_id)
     result = await session.execute(query)
     return result.all()
+
+
+async def create_chat(
+        author_id: int,
+        user_ids: List[int],
+):
+    async_session = anext(get_async_session())
+    session = await async_session
+    result = await session.execute(select(auth_user.c.id, auth_user.c.name).where(auth_user.c.id.in_(user_ids)))
+    users = result.all()
+    result = await session.execute(select(auth_user.c.id, auth_user.c.name).where(auth_user.c.id == author_id))
+    author = result.fetchone()
+    chat_name = f"{author['name']} {' '.join([user['name'] for user in users])}"
+    stmt = insert(chat).values(
+        name=chat_name
+    ).returning(chat.c.id)
+    result = await session.execute(stmt)
+    chat_id = result.fetchone()[0]
+
+    stmt = insert(user_chat).values([{"user_id": author["id"], "chat_id": chat_id}] + [
+        {"user_id": user["id"], "chat_id": chat_id} for user in users
+    ])
+    await session.execute(stmt)
+    await session.commit()
+    return {"chat_name": chat_name, "chat_id": chat_id}
 
 
 async def get_amount_of_unchecked_messages_in_one_chat(user_id: int, chat_id: int):
@@ -165,12 +165,21 @@ async def save_message(user_id: int, chat_id: int, value: str):
     return message_id
 
 
+async def validate_message_author(message_id: int, user_id: int, chat_id: int):
+    async_session = anext(get_async_session())
+    session = await async_session
+    query = select(message).where(message.c.id == message_id)
+    result = await session.execute(query)
+    msg = result.fetchone()
+    return msg[2] == user_id and msg[3] == chat_id
+
+
 async def edit_message(message_id: int, value: str):
     async_session = anext(get_async_session())
     session = await async_session
     query = select(message.c.timestamp).where(message.c.id == message_id)
     result = await session.execute(query)
-    timestamp = result.fetchone()[0]  # TODO make sort
-    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=datetime.date(1995, 12, 1))
+    timestamp = result.fetchone()[0]
+    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp)
     await session.execute(stmt)
     await session.commit()
