@@ -50,7 +50,7 @@ class ConnectionManager:
 
     async def send_message(self, user_id, message: dict):
         message_id = await utils.save_message(user_id, message["chat_id"], message["value"])
-        await self.propagate_message(user_id, {"id": message_id, **message})
+        await self.propagate_message(user_id, {"id": message_id, "sender": user_id, **message})
 
     async def broadcast(self, user_id: int, message: str):
         message = json.loads(message)

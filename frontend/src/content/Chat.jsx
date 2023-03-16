@@ -58,6 +58,9 @@ export default class Chat extends React.Component {
         message_li.setAttribute("id", message.id)
         avatar.textContent = `${message.name} ${message.surname}`
         avatar.style.fontWeight = "bold"
+        avatar.style.padding = "10px 0 15px 0"
+        avatar.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
+        content.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
         content.textContent = message.value
 
         message_li.onclick = () => {
@@ -197,6 +200,10 @@ export default class Chat extends React.Component {
             let user_input = document.createElement("input")
             user_input.type = "checkbox"
             user_input.value = user["id"]
+            user_input.style.pointerEvents = "none"
+            user_li.onclick = () => {
+                user_input.checked = !user_input.checked
+            }
             user_li.textContent = `${user["name"]} ${user["surname"]}`
             user_li.appendChild(user_input)
             checkboxes.appendChild(user_li)
@@ -263,9 +270,9 @@ export default class Chat extends React.Component {
                     </ul>
                     <ul id="new_user_block" className="block_content">
                         <ul>
-                            <ul id="checkboxes"></ul>
+                            <ul id="checkboxes" className="list"></ul>
                             <ul>
-                                <button onClick={this.create_new_chat}>Create</button>
+                                <div className="send_button" onClick={this.create_new_chat}>Create</div>
                             </ul>
                         </ul>
                     </ul>

@@ -129,10 +129,32 @@
     display: none;
 }
 
-#checkboxes > ul {
-    height: 300px;
+#checkboxes {
+    height: 500px;
+    width: 490px;
     overflow: scroll;
 }
+
+#checkboxes > li {
+    width: 435px;
+}
+
+#new_user_block > ul > ul:last-child {
+    text-align: center;
+    background-color: blue;
+    height: 63px;
+    margin: 0 7px 0 7px;
+
+}
+
+#new_user_block > ul > ul:last-child > div {
+    width: 100%;
+    height: 100%;
+}
+
+#new_user_block > ul > ul:last-child > div:hover {
+}
+
 /* new user block end*/
 
 /* profile block start*/
