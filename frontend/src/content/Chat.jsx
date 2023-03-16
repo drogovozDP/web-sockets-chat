@@ -23,6 +23,7 @@ export default class Chat extends React.Component {
             if (message.chat_id === this.state.chat_id) {
                 this.appendMessage(message)
                 this.check_messages()
+                this.set_scroll_to_bottom("messages")
             } else {
                 this.setUncheckedMessageAmount(message.chat_id)
             }
@@ -56,6 +57,7 @@ export default class Chat extends React.Component {
 
         message_li.setAttribute("id", message.id)
         avatar.textContent = `${message.name} ${message.surname}`
+        avatar.style.fontWeight = "bold"
         content.textContent = message.value
 
         message_li.onclick = () => {
@@ -134,6 +136,27 @@ export default class Chat extends React.Component {
         })
     }
 
+    check_if_need_more_messages = () => {
+        let messages = document.getElementById("messages")
+        if (messages.scrollTop === 0) {
+            console.log("give me more messages!")
+        }
+    }
+
+    get_messages_in_the_chat_from_db = async () => {
+        let messages = await axios.get(`http://127.0.0.1:8000/chat/${this.state.chat_id}`)
+        let messages_ul = document.getElementById("messages")
+        messages_ul.innerHTML = ""
+        for (let i = 0; i < messages.data.length; i++) {
+            this.appendMessage(messages.data[i])
+        }
+    }
+
+    set_scroll_to_bottom = (element_id) => {
+        let element = document.getElementById(element_id)
+        element.scrollTop = element.scrollHeight
+    }
+
     addChatButton = (chat_id, chat_name) => {
         let chat_li = document.createElement("li")
         let chat_list_ul = document.getElementById("chat_list")
@@ -142,15 +165,9 @@ export default class Chat extends React.Component {
         chat_li.onclick = async () => {
             this.setState({ chat_id: chat_id })
             this.display_content("chat_block")
-
-            // add messages from current chat.
-            let messages = await axios.get(`http://127.0.0.1:8000/chat/${chat_id}`)
-            let messages_ul = document.getElementById("messages")
-            messages_ul.innerHTML = ""
-            for (let i = 0; i < messages.data.length; i++) {
-                this.appendMessage(messages.data[i])
-            }
+            await this.get_messages_in_the_chat_from_db()
             this.check_messages()
+            this.set_scroll_to_bottom("messages")
         }
         chat_list_ul.insertBefore(chat_li, chat_list_ul.lastChild)
         this.setUncheckedMessageAmount(chat_id)
@@ -164,16 +181,27 @@ export default class Chat extends React.Component {
                 users.push(parseInt(checkboxes[i].lastChild.value))
             }
         }
-//         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-
-        // add new chat to the chat list
         let message = JSON.stringify({
             "type": "create_chat",
             "value": users,
         })
         this.state.ws.send(message)
-//         let r = await axios.post("http://127.0.0.1:8000/chat", users )
-//         this.addChatButton(r.data.chat_details.chat_id, r.data.chat_details.chat_name)
+    }
+
+    prepare_chat_creation = async () => {
+        let response = await axios.get("http://127.0.0.1:8000/auth/api/users")
+        let checkboxes = document.getElementById("checkboxes")
+        checkboxes.innerHTML = ""
+        response.data.forEach(function(user, _) {
+            let user_li = document.createElement("li")
+            let user_input = document.createElement("input")
+            user_input.type = "checkbox"
+            user_input.value = user["id"]
+            user_li.textContent = `${user["name"]} ${user["surname"]}`
+            user_li.appendChild(user_input)
+            checkboxes.appendChild(user_li)
+        })
+        this.display_content("new_user_block")
     }
 
     create_websocket_connection = () => {
@@ -198,25 +226,6 @@ export default class Chat extends React.Component {
         let chat_response = await axios.get("http://127.0.0.1:8000/chat")
         let chat_list = document.getElementById("chat_list")
 
-        // 'create new chat' button.
-        let new_chat_li = document.createElement("li")
-        new_chat_li.textContent = "New chat"
-        new_chat_li.onclick = async () => {
-            let response = await axios.get("http://127.0.0.1:8000/auth/api/users")
-            let checkboxes = document.getElementById("checkboxes")
-            response.data.forEach(function(user, _) {
-                let user_li = document.createElement("li")
-                let user_input = document.createElement("input")
-                user_input.type = "checkbox"
-                user_input.value = user["id"]
-                user_li.textContent = `${user["name"]} ${user["surname"]}`
-                user_li.appendChild(user_input)
-                checkboxes.appendChild(user_li)
-            })
-            this.display_content("new_user_block")
-        }
-        chat_list.appendChild(new_chat_li)
-
         for (let i = 0; i < chat_response.data.length; i++) {
             let chat = chat_response.data[i]
             this.addChatButton(chat.id, chat.name)
@@ -234,14 +243,14 @@ export default class Chat extends React.Component {
                         </li>
                         <li>
                             <ul id="chat_list" className="list">
-                                {/*<li>chat</li>*/}
+                                <li onClick={this.prepare_chat_creation} >New chat</li>
                             </ul>
                         </li>
                     </ul>
 
                     <ul id="chat_block" className="block_content">
                          <li>
-                            <ul id="messages">
+                            <ul id="messages" onScroll={this.check_if_need_more_messages}>
                                 {/*<li>message</li>*/}
                             </ul>
                         </li>

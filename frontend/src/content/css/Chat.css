@@ -9,7 +9,6 @@
 /* list block start*/
 .list_header {
     width: 200px;
-    /*height: 500px;*/
     padding: 5px;
     border: solid 1px black;
     font-size: 14px;
@@ -46,6 +45,12 @@
 }
 /* list block end */
 
+/* chat list start */
+#chat_list > li:last-child {
+    font-weight: bold;
+}
+/* chat list end */
+
 /* block content start */
 .block_content {
     width: 500px;
@@ -59,7 +64,7 @@
 }
 
 /* messages */
-#Chat > nav > ul:nth-child(2) > li > ul:nth-child(1) {
+#messages {
     overflow: scroll;
     height: 464px;
     border: solid 1px black;
