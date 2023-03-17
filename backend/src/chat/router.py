@@ -38,10 +38,11 @@ async def create_chat(
 @router.get("/{chat_id}")
 async def get_messages_from_specific_chat(
         chat_id: int,
+        page: int,
         user: UserRead = Depends(get_current_user),
         session: AsyncSession = Depends(get_async_session),
 ):
-    return await utils.get_messages_from_specific_chat(chat_id, user.id, session)
+    return await utils.get_messages_from_specific_chat(chat_id, user.id, page, session)
 
 
 # TODO test_1: query chat that user doesn't have access; test_2: query chat that doesn't exist

@@ -1,7 +1,7 @@
 from typing import List
 import datetime
 
-from sqlalchemy import select, insert, update, delete, and_, func, asc
+from sqlalchemy import select, insert, update, delete, and_, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.auth.models import auth_user
@@ -19,6 +19,7 @@ async def get_user_chat_list(user_id: int, session: AsyncSession):
 async def get_messages_from_specific_chat(
         chat_id: int,
         user_id: int,
+        page: int,
         session: AsyncSession,
 ):
     subquery = select(user_chat.c.chat_id).where(
@@ -28,9 +29,10 @@ async def get_messages_from_specific_chat(
     query = select(message, auth_user.c.name, auth_user.c.surname) \
         .where(message.c.chat_id == subquery) \
         .join(auth_user).filter(auth_user.c.id == message.c.sender) \
-        .order_by(asc(message.c.timestamp))
+        .order_by(desc(message.c.timestamp))
+    query = query.limit(10).offset(10 * page)
     result = await session.execute(query)
-    return result.all()
+    return result.all()[::-1]
 
 
 async def get_amount_of_unchecked_messages(

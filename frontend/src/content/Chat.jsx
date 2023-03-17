@@ -10,11 +10,13 @@ export default class Chat extends React.Component {
         this.state = {
             message_id: 0,
             chat_id: 0,
+            waiting_messages: false,
+            page: 0,
             content_names: [
                 "chat_block",
                 "new_user_block",
                 "profile_block",
-            ]
+            ],
         }
     }
 
@@ -72,8 +74,12 @@ export default class Chat extends React.Component {
         message_li_ul.appendChild(avatar)
         message_li_ul.appendChild(content)
         message_li.append(message_li_ul)
-        messages_ul.appendChild(message_li)
-
+        if (!this.state.waiting_messages) {
+            messages_ul.appendChild(message_li)
+        } else {
+//             message_li.style.backgroundColor = "#576"
+            messages_ul.insertBefore(message_li, messages_ul.firstChild)
+        }
     }
 
     setUncheckedMessageAmount = async (id) => {
@@ -127,10 +133,6 @@ export default class Chat extends React.Component {
         document.getElementById("input_text").value = ""
     }
 
-    componentWillUnmount() {
-        this.state.ws.close()
-    }
-
     display_content(display_content_name) {
         this.state.content_names.forEach(function (content_name, _) {
             let display = content_name === display_content_name ? "block" : "none"
@@ -141,18 +143,23 @@ export default class Chat extends React.Component {
 
     check_if_need_more_messages = () => {
         let messages = document.getElementById("messages")
-        if (messages.scrollTop === 0) {
-            console.log("give me more messages!")
+        if ((messages.scrollTop === 0) && (!this.state.waiting_messages) && (this.state.page > 0)) {
+            this.setState({ "waiting_messages": true })
+            this.get_messages_in_the_chat_from_db()
         }
     }
 
     get_messages_in_the_chat_from_db = async () => {
-        let messages = await axios.get(`http://127.0.0.1:8000/chat/${this.state.chat_id}`)
+        let messages = await axios.get(`http://127.0.0.1:8000/chat/${this.state.chat_id}?page=${this.state.page}`)
         let messages_ul = document.getElementById("messages")
-        messages_ul.innerHTML = ""
+        let old_scroll_height = messages_ul.scrollHeight
         for (let i = 0; i < messages.data.length; i++) {
-            this.appendMessage(messages.data[i])
+            let idx = this.state.waiting_messages ? messages.data.length - i - 1 : i
+            this.appendMessage(messages.data[idx])
         }
+        messages_ul.scrollTop = messages_ul.scrollHeight - old_scroll_height
+        this.setState({ "page": this.state.page + 1 })
+        this.setState({ "waiting_messages": false })
     }
 
     set_scroll_to_bottom = (element_id) => {
@@ -165,10 +172,15 @@ export default class Chat extends React.Component {
         let chat_list_ul = document.getElementById("chat_list")
         chat_li.setAttribute("id", `chat_${chat_id}`)
         chat_li.textContent = `${chat_name}: 0`
-        chat_li.onclick = async () => {
+        chat_li.onclick = () => {
+            this.setState({ "waiting_messages": false })
+            this.setState({ "page": 0 })
             this.setState({ chat_id: chat_id })
             this.display_content("chat_block")
-            await this.get_messages_in_the_chat_from_db()
+            let messages = document.getElementById("messages")
+            messages.innerHTML = ""
+            messages.scrollTop = 0
+            this.get_messages_in_the_chat_from_db()
             this.check_messages()
             this.set_scroll_to_bottom("messages")
         }
@@ -237,6 +249,10 @@ export default class Chat extends React.Component {
             let chat = chat_response.data[i]
             this.addChatButton(chat.id, chat.name)
         }
+    }
+
+    componentWillUnmount() {
+        this.state.ws.close()
     }
 
     render() {
