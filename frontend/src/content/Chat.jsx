@@ -224,6 +224,8 @@ export default class Chat extends React.Component {
     }
 
     create_websocket_connection = () => {
+//         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
+//         const url = `ws://127.0.0.1:8000/chat/ws`
         const url = `ws://127.0.0.1:8000/chat/ws/${this.state.user_id}`
         const ws = new WebSocket(url)
         ws.onmessage = async (ev) => {

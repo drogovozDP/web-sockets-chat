@@ -130,6 +130,7 @@ async def check_messages_in_the_chat(user_id: int, chat_id: int):
     unchecked_messages = select(message.c.id).join(unchecked_ids) \
         .filter(and_(message.c.chat_id == chat_id, unchecked_ids.c.message_id == message.c.id)).subquery()
 
+    # TODO get IDs that we want to delete (remove in_ operator)
     to_delete = select(unchecked_message.c.id).join(unchecked_messages) \
         .filter(unchecked_messages.c.id == unchecked_message.c.message_id) \
         .where(unchecked_message.c.user_id == user_id).subquery()

@@ -55,4 +55,4 @@ async def get_user(user: UserRead = Depends(utils.get_current_user)):
         "email": user.email,
         "name": user.name,
         "surname": user.surname,
-    }
+    } if user is not None else None
