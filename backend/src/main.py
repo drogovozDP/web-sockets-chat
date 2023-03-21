@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.src.chat.router import router as router_chat
+# from backend.src.auth_depricated.router import router as router_auth
 from backend.src.auth.router import router as router_auth
 
 
@@ -11,7 +12,7 @@ app = FastAPI(
 
 # TODO need to put in into .env
 origins = [
-    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 app.add_middleware(
