@@ -12,6 +12,7 @@ app = FastAPI(
 
 # TODO need to put in into .env
 origins = [
+    "http://127.0.0.1",
     "http://127.0.0.1:3000",
 ]
 

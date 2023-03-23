@@ -38,21 +38,21 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASS}
       - POSTGRES_DB=${DB_NAME}
-#  nginx:
-#    image: nginx:1.21.6-alpine
-#    container_name: nginx
-#    ports:
-#      - "80:80"
-#    restart: always
-#    volumes:
-#      - ./nginx/dev/:/etc/nginx/conf.d/:ro
-##      - staticfiles:/app/static
-#    depends_on:
-#      backend:
+  nginx:
+    image: nginx:1.21.6-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    restart: always
+    volumes:
+      - ./nginx/dev/:/etc/nginx/conf.d/
+#      - staticfiles:/app/static
+    depends_on:
+      backend:
 #        condition: service_healthy
-##        condition: service_started
-#      frontend:
-#        condition: service_started
+        condition: service_started
+      frontend:
+        condition: service_started
 
 volumes:
   postgres_data:
