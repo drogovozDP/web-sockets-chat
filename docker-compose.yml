@@ -9,6 +9,12 @@ services:
       - ./backend:/backend
     ports:
       - 8000:8000
+#    healthcheck:
+#      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8000/ || exit 1
+#      interval: 5s
+#      retries: 5
+#      start_period: 3s
+#      timeout: 2s
 
   frontend:
     build:
@@ -32,6 +38,21 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASS}
       - POSTGRES_DB=${DB_NAME}
+  nginx:
+    image: nginx:1.21.6-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    restart: always
+    volumes:
+      - ./nginx/dev/:/etc/nginx/conf.d/
+#      - staticfiles:/app/static
+    depends_on:
+      backend:
+#        condition: service_healthy
+        condition: service_started
+      frontend:
+        condition: service_started
 
 volumes:
   postgres_data:
