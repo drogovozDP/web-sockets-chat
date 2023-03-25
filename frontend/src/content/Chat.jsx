@@ -38,11 +38,13 @@ export default class Chat extends React.Component {
     }
 
     displayButtons = (name) => {
+        console.log(name)
         let edit = name === "edit" ? "flex" : "none"
         let send = name === "send" ? "flex" : "none"
+        let upload = name === "upload" ? "flex" : "none"
         document.getElementById("send").style.display = send
         document.getElementById("edit").style.display = edit
-        document.getElementById("cancel").style.display = edit
+        document.getElementById("upload").style.display = upload
     }
 
     setNewMessageValue = (message) => {
@@ -114,6 +116,25 @@ export default class Chat extends React.Component {
         textbox.value = ""
     }
 
+    uploadFile = () => {
+        console.log("Upload a file")
+        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
+
+//         axios.get("http://127.0.0.1:8000/auth/api/users/me").then(r => console.log(r.data))
+        let formData = new FormData();
+//         let data = document.querySelector('#file');
+        formData.append("file", "imagefile.files[0]");
+        axios.post(`http://127.0.0.1:8000/chat/${this.state.chat_id}/upload_file`, formData).then(r => console.log(r.data))
+//         let textbox = document.getElementById("input_text")
+//         let message = JSON.stringify({
+//             "type": "send_message",
+//             "chat_id": this.state.chat_id,
+//             "value": textbox.value,
+//         })
+//         this.state.ws.send(message)
+//         textbox.value = ""
+    }
+
     editMessage = async () => {
         let textbox = document.getElementById("input_text")
         let message = JSON.stringify({
@@ -124,13 +145,14 @@ export default class Chat extends React.Component {
         })
         this.state.ws.send(message)
         textbox.value = ""
-        this.cancelEdit()
+        this.cancel()
     }
 
-    cancelEdit = () => {
+    cancel = () => {
         this.setState({ "message_id": 0 })
         this.displayButtons("send")
         document.getElementById("input_text").value = ""
+        document.getElementById("fileupload").lastChild.value = ""
     }
 
     display_content(display_content_name) {
@@ -257,6 +279,27 @@ export default class Chat extends React.Component {
         this.state.ws.close()
     }
 
+    uploadFile = async () => {
+        let formData = new FormData();
+        let fileupload = document.getElementById("fileupload").lastChild
+        formData.append("file", fileupload.files[0]);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
+        let r = await axios.post(`http://127.0.0.1:8000/chat/${this.state.chat_id}/upload_file`, formData)
+
+
+        let message = JSON.stringify({
+            "type": "send_message",
+            "chat_id": this.state.chat_id,
+            "value": r.data.file_path,
+        })
+        alert("ebat")
+        this.state.ws.send(message)
+
+        alert('You have successfully upload the file!');
+        fileupload.value = ""
+        this.displayButtons("send")
+    }
+
     render() {
         return (
             <div id="Chat">
@@ -281,9 +324,20 @@ export default class Chat extends React.Component {
                         </li>
                         <li>
                             <textarea id="input_text" placeholder="This is the default text"></textarea>
-                            <button id="send" className="send_button" onClick={this.sendMessage}>SEND</button>
-                            <button id="edit" className="send_button" onClick={this.editMessage}>EDIT</button>
-                            <button id="cancel" className="send_button" onClick={this.cancelEdit}>CANCEL</button>
+                            <div id="send" className="send_button">
+                                <button onClick={this.sendMessage}>SEND</button>
+                                <button id="fileupload" onClick={(e) => document.getElementById('fileupload').lastChild.click()}> UPLOAD FILE
+                                    <input hidden type="file" name="fileupload" onChange={(e) => this.displayButtons("upload", e)}/>
+                                </button>
+                            </div>
+                            <div id="edit" className="send_button">
+                                <button onClick={this.editMessage}>EDIT</button>
+                                <button onClick={this.cancel}>CANCEL</button>
+                            </div>
+                            <div id="upload" className="send_button">
+                                <button onClick={this.uploadFile}>SEND FILE</button>
+                                <button onClick={this.cancel}>CANCEL</button>
+                            </div>
                         </li>
                     </ul>
                     <ul id="new_user_block" className="block_content">

@@ -104,21 +104,26 @@
     display: none;
 }
 
-#cancel {
+#upload {
     display: none;
 }
 
 .send_button {
+    width: 200px;
+    display: flex;
+}
+
+.send_button > button {
+    width: 100%;
     background-color: #14202a;
     border: none;
     color: #c5c5c5;
-    width: 30%;
     display: flex;
     align-items:center;
     justify-content:center;
 }
 
-.send_button:hover {
+.send_button > button:hover {
     background-color: #1e303f;
     cursor: pointer;
 }
