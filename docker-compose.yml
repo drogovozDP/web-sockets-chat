@@ -46,13 +46,15 @@ services:
     restart: always
     volumes:
       - ./nginx/dev/:/etc/nginx/conf.d/
-#      - staticfiles:/app/static
+      - ./backend/src/staticfiles:/app/static
     depends_on:
       backend:
-#        condition: service_healthy
         condition: service_started
       frontend:
         condition: service_started
 
 volumes:
   postgres_data:
+    driver: local
+  staticfiles:
+    driver: local

@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, WebSocket
+from fastapi import APIRouter, Depends, WebSocket, UploadFile, File
 from fastapi import WebSocketDisconnect, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,6 +65,16 @@ async def get_amount_of_unchecked_messages(
         session: AsyncSession = Depends(get_async_session),
 ):
     return await utils.get_amount_of_unchecked_messages(user.id, chat_id, session)
+
+
+@router.post("/{chat_id}/upload_file")
+async def upload_file(
+        chat_id: int,
+        user: UserRead = Depends(get_current_user),
+        session: AsyncSession = Depends(get_async_session),
+        file: UploadFile = File(...),
+):
+    return await utils.save_file(file, chat_id, user.id, session)
 
 
 @router.websocket("/ws/{user_id}")
