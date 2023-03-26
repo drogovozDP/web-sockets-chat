@@ -157,10 +157,11 @@ async def save_unchecked_message(message_id: int, chat_id: int):
     await session.commit()
 
 
-async def save_message(user_id: int, chat_id: int, value: str):
+async def save_message(user_id: int, chat_id: int, value: str, message_type: str):
     async_session = anext(get_async_session())
     session = await async_session
     stmt = insert(message).values(
+        type=message_type,
         value=value,
         sender=user_id,
         chat_id=chat_id,
@@ -195,10 +196,19 @@ async def save_file(file: UploadFile, chat_id: int, user_id: int, session):
 async def validate_message_author(message_id: int, user_id: int, chat_id: int):
     async_session = anext(get_async_session())
     session = await async_session
-    query = select(message).where(message.c.id == message_id)
+    query = select(message.c.sender, message.c.chat_id).where(message.c.id == message_id)
     result = await session.execute(query)
     msg = result.fetchone()
-    return msg[2] == user_id and msg[3] == chat_id
+    return msg[0] == user_id and msg[1] == chat_id
+
+
+async def validate_message_content(message_id: int):
+    async_session = anext(get_async_session())
+    session = await async_session
+    query = select(message.c.type).where(message.c.id == message_id)
+    result = await session.execute(query)
+    msg = result.fetchone()
+    return msg[0] == "text"
 
 
 async def edit_message(message_id: int, value: str):
@@ -207,6 +217,6 @@ async def edit_message(message_id: int, value: str):
     query = select(message.c.timestamp).where(message.c.id == message_id)
     result = await session.execute(query)
     timestamp = result.fetchone()[0]
-    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp)
-    await session.execute(stmt)
+    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp).returning(message.c.value)
+    a = await session.execute(stmt)
     await session.commit()

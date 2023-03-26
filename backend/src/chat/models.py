@@ -24,7 +24,7 @@ message = Table(
     "message",
     metadata,
     Column("id", Integer, primary_key=True),
-    # Column("type", String, nullable=False),
+    Column("type", String, nullable=False),
     Column("value", String, nullable=False),
     Column("sender", Integer, ForeignKey(auth_user.c.id)),
     Column("chat_id", Integer, ForeignKey(chat.c.id)),

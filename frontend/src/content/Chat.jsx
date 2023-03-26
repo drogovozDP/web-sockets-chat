@@ -21,24 +21,24 @@ export default class Chat extends React.Component {
     }
 
     receiveMessage = (message) => {
-        if (message.type === "send_message") {
+        if (message.ws_type === "send_message") {
             if (message.chat_id === this.state.chat_id) {
+                console.log(message)
                 this.appendMessage(message)
                 this.check_messages()
                 this.set_scroll_to_bottom("messages")
             } else {
                 this.setUncheckedMessageAmount(message.chat_id)
             }
-        } else if (message.type === "edit_message") {
+        } else if (message.ws_type === "edit_message") {
             if (message.chat_id === this.state.chat_id)
                 this.setNewMessageValue(message)
-        } else if (message.type === "create_chat") {
+        } else if (message.ws_type === "create_chat") {
             this.addChatButton(message.chat_id, message.chat_name)
         }
     }
 
     displayButtons = (name) => {
-        console.log(name)
         let edit = name === "edit" ? "flex" : "none"
         let send = name === "send" ? "flex" : "none"
         let upload = name === "upload" ? "flex" : "none"
@@ -65,7 +65,25 @@ export default class Chat extends React.Component {
         avatar.style.padding = "10px 0 15px 0"
         avatar.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
         content.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
-        content.textContent = message.value
+        if (message["type"] === "file") {
+            let link = `http://127.0.0.1/back_static/${message["value"]}`
+            let arr = link.split(".")
+            let file = null
+            if (arr[arr.length - 1] === "png" || arr[arr.length - 1] === "jpg") {
+                file = document.createElement("img")
+                file.src = link
+            } else {
+                file = document.createElement("a")
+                file.href = link
+                let val = message["value"].split("-")
+                file.textContent = val.splice(1).join("")
+            }
+            file.style.width = "100%"
+            file.style.height = "100%"
+            content.appendChild(file)
+        } else {
+            content.textContent = message.value
+        }
 
         message_li.onclick = () => {
             this.setState({ "message_id": message.id })
@@ -79,7 +97,6 @@ export default class Chat extends React.Component {
         if (!this.state.waiting_messages) {
             messages_ul.appendChild(message_li)
         } else {
-//             message_li.style.backgroundColor = "#576"
             messages_ul.insertBefore(message_li, messages_ul.firstChild)
         }
     }
@@ -95,7 +112,7 @@ export default class Chat extends React.Component {
 
     check_messages = () => {
         let message = JSON.stringify({
-            "type": "check_message",
+            "ws_type": "check_message",
             "chat_id": this.state.chat_id,
         })
         this.state.ws.send(message)
@@ -108,37 +125,19 @@ export default class Chat extends React.Component {
     sendMessage = () => {
         let textbox = document.getElementById("input_text")
         let message = JSON.stringify({
-            "type": "send_message",
+            "ws_type": "send_message",
             "chat_id": this.state.chat_id,
             "value": textbox.value,
+            "type": "text"
         })
         this.state.ws.send(message)
         textbox.value = ""
     }
 
-    uploadFile = () => {
-        console.log("Upload a file")
-        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-
-//         axios.get("http://127.0.0.1:8000/auth/api/users/me").then(r => console.log(r.data))
-        let formData = new FormData();
-//         let data = document.querySelector('#file');
-        formData.append("file", "imagefile.files[0]");
-        axios.post(`http://127.0.0.1:8000/chat/${this.state.chat_id}/upload_file`, formData).then(r => console.log(r.data))
-//         let textbox = document.getElementById("input_text")
-//         let message = JSON.stringify({
-//             "type": "send_message",
-//             "chat_id": this.state.chat_id,
-//             "value": textbox.value,
-//         })
-//         this.state.ws.send(message)
-//         textbox.value = ""
-    }
-
     editMessage = async () => {
         let textbox = document.getElementById("input_text")
         let message = JSON.stringify({
-            "type": "edit_message",
+            "ws_type": "edit_message",
             "chat_id": this.state.chat_id,
             "message_id": this.state.message_id,
             "value": textbox.value,
@@ -219,7 +218,7 @@ export default class Chat extends React.Component {
             }
         }
         let message = JSON.stringify({
-            "type": "create_chat",
+            "ws_type": "create_chat",
             "value": users,
         })
         this.state.ws.send(message)
@@ -286,16 +285,14 @@ export default class Chat extends React.Component {
         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
         let r = await axios.post(`http://127.0.0.1:8000/chat/${this.state.chat_id}/upload_file`, formData)
 
-
         let message = JSON.stringify({
-            "type": "send_message",
+            "ws_type": "send_message",
             "chat_id": this.state.chat_id,
             "value": r.data.file_path,
+            "type": "file",
         })
-        alert("ebat")
         this.state.ws.send(message)
 
-        alert('You have successfully upload the file!');
         fileupload.value = ""
         this.displayButtons("send")
     }
@@ -344,7 +341,9 @@ export default class Chat extends React.Component {
                         <ul>
                             <ul id="checkboxes" className="list"></ul>
                             <ul>
-                                <div className="send_button" onClick={this.create_new_chat}>Create</div>
+                                <div className="send_button">
+                                    <button onClick={this.create_new_chat}>CREATE</button>
+                                </div>
                             </ul>
                         </ul>
                     </ul>

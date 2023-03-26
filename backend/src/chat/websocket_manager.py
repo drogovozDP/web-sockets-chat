@@ -31,7 +31,8 @@ class ConnectionManager:
 
     async def edit_message(self, user_id: int, message: dict):
         is_owner = await utils.validate_message_author(message["message_id"], user_id, message["chat_id"])
-        if is_owner:
+        is_text = await utils.validate_message_content(message["message_id"])
+        if is_owner and is_text:
             await utils.edit_message(message["message_id"], message["value"])
             await self.propagate_message(user_id, message)
 
@@ -49,22 +50,22 @@ class ConnectionManager:
             }))
 
     async def send_message(self, user_id, message: dict):
-        message_id = await utils.save_message(user_id, message["chat_id"], message["value"])
+        message_id = await utils.save_message(user_id, message["chat_id"], message["value"], message["type"])
         await self.propagate_message(user_id, {"id": message_id, "sender": user_id, **message})
 
     async def broadcast(self, user_id: int, message: str):
         message = json.loads(message)
-        message_type = message["type"]
-        if message_type == "send_message":
+        ws_type = message["ws_type"]
+        if ws_type == "send_message":
             await self.send_message(user_id, message)
 
-        elif message_type == "check_message":
+        elif ws_type == "check_message":
             await self.check_message(user_id, message["chat_id"])
 
-        elif message_type == "edit_message":
+        elif ws_type == "edit_message":
             await self.edit_message(user_id, message)
 
-        elif message_type == "create_chat":
+        elif ws_type == "create_chat":
             await self.create_chat(user_id, message)
 
 
