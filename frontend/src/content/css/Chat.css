@@ -71,6 +71,7 @@
     font-size: 14px;
 }
 
+/* messages block start */
 #messages > li {
     border-radius: 10px;
     padding: 10px;
@@ -83,6 +84,15 @@
     background-color: #212a36;
     cursor: pointer;
 }
+
+#messages > li > ul > li > a {
+    background-color: #344170;
+}
+
+#messages > li > ul > li > a:hover {
+    background-color: #342170;
+}
+/* messages block end */
 
 /* text area block*/
 #Chat > nav > ul:nth-child(2) > li:nth-child(2) {
@@ -104,21 +114,26 @@
     display: none;
 }
 
-#cancel {
+#upload {
     display: none;
 }
 
 .send_button {
+    width: 200px;
+    display: flex;
+}
+
+.send_button > button {
+    width: 100%;
     background-color: #14202a;
     border: none;
     color: #c5c5c5;
-    width: 30%;
     display: flex;
     align-items:center;
     justify-content:center;
 }
 
-.send_button:hover {
+.send_button > button:hover {
     background-color: #1e303f;
     cursor: pointer;
 }

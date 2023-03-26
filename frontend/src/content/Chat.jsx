@@ -21,18 +21,19 @@ export default class Chat extends React.Component {
     }
 
     receiveMessage = (message) => {
-        if (message.type === "send_message") {
+        if (message.ws_type === "send_message") {
             if (message.chat_id === this.state.chat_id) {
+                console.log(message)
                 this.appendMessage(message)
                 this.check_messages()
                 this.set_scroll_to_bottom("messages")
             } else {
                 this.setUncheckedMessageAmount(message.chat_id)
             }
-        } else if (message.type === "edit_message") {
+        } else if (message.ws_type === "edit_message") {
             if (message.chat_id === this.state.chat_id)
                 this.setNewMessageValue(message)
-        } else if (message.type === "create_chat") {
+        } else if (message.ws_type === "create_chat") {
             this.addChatButton(message.chat_id, message.chat_name)
         }
     }
@@ -40,9 +41,10 @@ export default class Chat extends React.Component {
     displayButtons = (name) => {
         let edit = name === "edit" ? "flex" : "none"
         let send = name === "send" ? "flex" : "none"
+        let upload = name === "upload" ? "flex" : "none"
         document.getElementById("send").style.display = send
         document.getElementById("edit").style.display = edit
-        document.getElementById("cancel").style.display = edit
+        document.getElementById("upload").style.display = upload
     }
 
     setNewMessageValue = (message) => {
@@ -63,7 +65,25 @@ export default class Chat extends React.Component {
         avatar.style.padding = "10px 0 15px 0"
         avatar.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
         content.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
-        content.textContent = message.value
+        if (message["type"] === "file") {
+            let link = `http://127.0.0.1/back_static/${message["value"]}`
+            let arr = link.split(".")
+            let file = null
+            if (arr[arr.length - 1] === "png" || arr[arr.length - 1] === "jpg") {
+                file = document.createElement("img")
+                file.src = link
+            } else {
+                file = document.createElement("a")
+                file.href = link
+                let val = message["value"].split("-")
+                file.textContent = val.splice(1).join("")
+            }
+            file.style.width = "100%"
+            file.style.height = "100%"
+            content.appendChild(file)
+        } else {
+            content.textContent = message.value
+        }
 
         message_li.onclick = () => {
             this.setState({ "message_id": message.id })
@@ -77,7 +97,6 @@ export default class Chat extends React.Component {
         if (!this.state.waiting_messages) {
             messages_ul.appendChild(message_li)
         } else {
-//             message_li.style.backgroundColor = "#576"
             messages_ul.insertBefore(message_li, messages_ul.firstChild)
         }
     }
@@ -93,7 +112,7 @@ export default class Chat extends React.Component {
 
     check_messages = () => {
         let message = JSON.stringify({
-            "type": "check_message",
+            "ws_type": "check_message",
             "chat_id": this.state.chat_id,
         })
         this.state.ws.send(message)
@@ -106,9 +125,10 @@ export default class Chat extends React.Component {
     sendMessage = () => {
         let textbox = document.getElementById("input_text")
         let message = JSON.stringify({
-            "type": "send_message",
+            "ws_type": "send_message",
             "chat_id": this.state.chat_id,
             "value": textbox.value,
+            "type": "text"
         })
         this.state.ws.send(message)
         textbox.value = ""
@@ -117,20 +137,21 @@ export default class Chat extends React.Component {
     editMessage = async () => {
         let textbox = document.getElementById("input_text")
         let message = JSON.stringify({
-            "type": "edit_message",
+            "ws_type": "edit_message",
             "chat_id": this.state.chat_id,
             "message_id": this.state.message_id,
             "value": textbox.value,
         })
         this.state.ws.send(message)
         textbox.value = ""
-        this.cancelEdit()
+        this.cancel()
     }
 
-    cancelEdit = () => {
+    cancel = () => {
         this.setState({ "message_id": 0 })
         this.displayButtons("send")
         document.getElementById("input_text").value = ""
+        document.getElementById("fileupload").lastChild.value = ""
     }
 
     display_content(display_content_name) {
@@ -197,7 +218,7 @@ export default class Chat extends React.Component {
             }
         }
         let message = JSON.stringify({
-            "type": "create_chat",
+            "ws_type": "create_chat",
             "value": users,
         })
         this.state.ws.send(message)
@@ -257,6 +278,25 @@ export default class Chat extends React.Component {
         this.state.ws.close()
     }
 
+    uploadFile = async () => {
+        let formData = new FormData();
+        let fileupload = document.getElementById("fileupload").lastChild
+        formData.append("file", fileupload.files[0]);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
+        let r = await axios.post(`http://127.0.0.1:8000/chat/${this.state.chat_id}/upload_file`, formData)
+
+        let message = JSON.stringify({
+            "ws_type": "send_message",
+            "chat_id": this.state.chat_id,
+            "value": r.data.file_path,
+            "type": "file",
+        })
+        this.state.ws.send(message)
+
+        fileupload.value = ""
+        this.displayButtons("send")
+    }
+
     render() {
         return (
             <div id="Chat">
@@ -281,16 +321,29 @@ export default class Chat extends React.Component {
                         </li>
                         <li>
                             <textarea id="input_text" placeholder="This is the default text"></textarea>
-                            <button id="send" className="send_button" onClick={this.sendMessage}>SEND</button>
-                            <button id="edit" className="send_button" onClick={this.editMessage}>EDIT</button>
-                            <button id="cancel" className="send_button" onClick={this.cancelEdit}>CANCEL</button>
+                            <div id="send" className="send_button">
+                                <button onClick={this.sendMessage}>SEND</button>
+                                <button id="fileupload" onClick={(e) => document.getElementById('fileupload').lastChild.click()}> UPLOAD FILE
+                                    <input hidden type="file" name="fileupload" onChange={(e) => this.displayButtons("upload", e)}/>
+                                </button>
+                            </div>
+                            <div id="edit" className="send_button">
+                                <button onClick={this.editMessage}>EDIT</button>
+                                <button onClick={this.cancel}>CANCEL</button>
+                            </div>
+                            <div id="upload" className="send_button">
+                                <button onClick={this.uploadFile}>SEND FILE</button>
+                                <button onClick={this.cancel}>CANCEL</button>
+                            </div>
                         </li>
                     </ul>
                     <ul id="new_user_block" className="block_content">
                         <ul>
                             <ul id="checkboxes" className="list"></ul>
                             <ul>
-                                <div className="send_button" onClick={this.create_new_chat}>Create</div>
+                                <div className="send_button">
+                                    <button onClick={this.create_new_chat}>CREATE</button>
+                                </div>
                             </ul>
                         </ul>
                     </ul>

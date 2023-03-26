@@ -1,11 +1,14 @@
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 load_dotenv()
 
 SECRET_AUTH = os.environ.get("SECRET_AUTH")
 ALGORITHM = os.environ.get("ALGORITHM")
 LIFETIME_SECONDS = int(os.environ.get("LIFETIME_SECONDS"))
+
+STATIC_FILES_PATH = Path("src/staticfiles")
 
 DB_USER = os.environ.get("DB_USER")
 DB_PASS = os.environ.get("DB_PASS")

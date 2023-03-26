@@ -1,12 +1,17 @@
+import os
+import shutil
 from typing import List
 import datetime
+from pathlib import Path
 
+from fastapi import UploadFile
 from sqlalchemy import select, insert, update, delete, and_, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.auth.models import auth_user
 from backend.src.chat.models import user_chat, chat, message, unchecked_message
 from backend.src.database import get_async_session
+from backend.src.config import STATIC_FILES_PATH
 
 
 async def get_user_chat_list(user_id: int, session: AsyncSession):
@@ -152,10 +157,11 @@ async def save_unchecked_message(message_id: int, chat_id: int):
     await session.commit()
 
 
-async def save_message(user_id: int, chat_id: int, value: str):
+async def save_message(user_id: int, chat_id: int, value: str, message_type: str):
     async_session = anext(get_async_session())
     session = await async_session
     stmt = insert(message).values(
+        type=message_type,
         value=value,
         sender=user_id,
         chat_id=chat_id,
@@ -168,13 +174,41 @@ async def save_message(user_id: int, chat_id: int, value: str):
     return message_id
 
 
+async def check_if_user_in_chat(user_id, chat_id, session):
+    query = select(user_chat).where(and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id))
+    result = await session.execute(query)
+    user_in_chat = result.fetchone()
+    return True if user_in_chat is not None else False
+
+
+async def save_file(file: UploadFile, chat_id: int, user_id: int, session):
+    user_in_chat = await check_if_user_in_chat(user_id, chat_id, session)
+    if not user_in_chat:
+        return {"status": 400, "detail": "Bad credentials."}
+    dir_name = STATIC_FILES_PATH / str(chat_id)
+    os.mkdir(dir_name) if not os.path.exists(dir_name) else None
+    file_name = f"{len(os.listdir(dir_name))}-{file.filename}"
+    with open(dir_name / file_name, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"status": 200, "detail": f"File {file.filename} saved!", "file_path": Path(str(chat_id)) / file_name}
+
+
 async def validate_message_author(message_id: int, user_id: int, chat_id: int):
     async_session = anext(get_async_session())
     session = await async_session
-    query = select(message).where(message.c.id == message_id)
+    query = select(message.c.sender, message.c.chat_id).where(message.c.id == message_id)
     result = await session.execute(query)
     msg = result.fetchone()
-    return msg[2] == user_id and msg[3] == chat_id
+    return msg[0] == user_id and msg[1] == chat_id
+
+
+async def validate_message_content(message_id: int):
+    async_session = anext(get_async_session())
+    session = await async_session
+    query = select(message.c.type).where(message.c.id == message_id)
+    result = await session.execute(query)
+    msg = result.fetchone()
+    return msg[0] == "text"
 
 
 async def edit_message(message_id: int, value: str):
@@ -183,6 +217,6 @@ async def edit_message(message_id: int, value: str):
     query = select(message.c.timestamp).where(message.c.id == message_id)
     result = await session.execute(query)
     timestamp = result.fetchone()[0]
-    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp)
-    await session.execute(stmt)
+    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp).returning(message.c.value)
+    a = await session.execute(stmt)
     await session.commit()
