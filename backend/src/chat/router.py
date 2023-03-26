@@ -30,7 +30,7 @@ async def create_chat(
         user: int,
         users: List[int],
 ):
-    chat_details = await utils.create_chat(users, user)
+    chat_details = await utils.create_chat(user, users)
     return {"status": 200, "details": "Chat has been created.", "chat_details": chat_details}
 
 
