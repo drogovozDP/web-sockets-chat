@@ -66,7 +66,7 @@ export default class Chat extends React.Component {
         avatar.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
         content.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
         if (message["type"] === "file") {
-            let link = `http://127.0.0.1/back_static/${message["value"]}`
+            let link = `http://127.0.0.1/back_media/${message["value"]}`
             let arr = link.split(".")
             let file = null
             if (arr[arr.length - 1] === "png" || arr[arr.length - 1] === "jpg") {

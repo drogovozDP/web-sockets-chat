@@ -46,7 +46,7 @@ services:
     restart: always
     volumes:
       - ./nginx/dev/:/etc/nginx/conf.d/
-      - ./backend/src/staticfiles:/app/static
+      - ./backend/src/media:/app/media
     depends_on:
       backend:
         condition: service_started

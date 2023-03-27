@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.src.auth.models import auth_user
 from backend.src.chat.models import user_chat, chat, message, unchecked_message
 from backend.src.database import get_async_session
-from backend.src.config import STATIC_FILES_PATH
+from backend.src.config import MEDIA_FILES_PATH
 
 
 async def get_user_chat_list(user_id: int, session: AsyncSession):
@@ -185,12 +185,10 @@ async def save_file(file: UploadFile, chat_id: int, user_id: int, session):
     user_in_chat = await check_if_user_in_chat(user_id, chat_id, session)
     if not user_in_chat:
         return {"status": 400, "detail": "Bad credentials."}
-    dir_name = STATIC_FILES_PATH / str(chat_id)
-    os.mkdir(dir_name) if not os.path.exists(dir_name) else None
-    file_name = f"{len(os.listdir(dir_name))}-{file.filename}"
-    with open(dir_name / file_name, "wb") as buffer:
+    file_name = f"{len(os.listdir(MEDIA_FILES_PATH))}-{file.filename}"
+    with open(MEDIA_FILES_PATH / file_name, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    return {"status": 200, "detail": f"File {file.filename} saved!", "file_path": Path(str(chat_id)) / file_name}
+    return {"status": 200, "detail": f"File {file.filename} saved!", "file_path": file_name}
 
 
 async def validate_message_author(message_id: int, user_id: int, chat_id: int):
