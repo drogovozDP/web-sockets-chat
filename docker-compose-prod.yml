@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  backend:
+    build: backend/.
+    command: bash -c 'while !</dev/tcp/db/${DB_PORT}; do sleep 1; done; alembic upgrade head; uvicorn src.main:app --host 0.0.0.0 --reload'
+    container_name: backend
+    volumes:
+      - ./backend:/backend
+    ports:
+      - 8000:8000
+
+  frontend:
+    build:
+      context: frontend/.
+    ports:
+      - 3000:3000
+    container_name: frontend
+    volumes:
+      - ./frontend:/frontend
+
+  db:
+    image: postgres:15-alpine
+    container_name: db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - 5433:${DB_PORT}
+    expose:
+      - ${DB_PORT}
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+  nginx:
+    image: nginx:1.21.6-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    restart: always
+    volumes:
+      - ./nginx/prod/:/etc/nginx/conf.d/
+      - ./backend/src/media:/app/media
+    depends_on:
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_started
+
+volumes:
+  postgres_data:
+    driver: local
+  media:
+    driver: local
