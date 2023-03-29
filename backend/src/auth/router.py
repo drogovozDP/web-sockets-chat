@@ -8,7 +8,7 @@ from backend.src.auth import utils
 
 
 router = APIRouter(
-    prefix="/auth",
+    prefix="/api/auth",
     tags=["Auth"]
 )
 
