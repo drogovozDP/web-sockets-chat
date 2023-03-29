@@ -9,12 +9,6 @@ services:
       - ./backend:/backend
     ports:
       - 8000:8000
-#    healthcheck:
-#      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8000/ || exit 1
-#      interval: 5s
-#      retries: 5
-#      start_period: 3s
-#      timeout: 2s
 
   frontend:
     build:
@@ -46,7 +40,7 @@ services:
     restart: always
     volumes:
       - ./nginx/dev/:/etc/nginx/conf.d/
-      - ./backend/src/staticfiles:/app/static
+      - ./backend/src/media:/app/media
     depends_on:
       backend:
         condition: service_started
@@ -56,5 +50,5 @@ services:
 volumes:
   postgres_data:
     driver: local
-  staticfiles:
+  media:
     driver: local

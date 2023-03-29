@@ -3,6 +3,7 @@ import { fetchToken, setToken } from "./Auth";
 import React, { useState } from "react";
 import "./css/Login.css"
 import axios from "axios";
+import { URL } from "./App.jsx"
 
 export default function Login() {
     const navigate = useNavigate();
@@ -25,9 +26,8 @@ export default function Login() {
             body: data,
         }
 
-        axios.post("http://127.0.0.1:8000/auth/token", data, requestOptions)
+        axios.post(`${URL}/auth/token`, data, requestOptions)
             .then(function (response) {
-                console.log(response.data.access_token, "response.data.access_token");
                 if (response.data.access_token) {
                     setToken(response.data.access_token);
                     navigate("/profile");

@@ -1,6 +1,5 @@
 import "./css/App.css";
 import React from "react";
-import { appendMessage } from "./ChatUtils";
 
 import {
     BrowserRouter as Router,
@@ -18,23 +17,14 @@ import Login from "./Login";
 import Profile from "./Profile";
 import { RequireToken } from "./Auth";
 
-
+export const URL = process.env.REACT_APP_URL
+export const URL_MEDIA = process.env.REACT_APP_URL_MEDIA
 export default class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
 
         }
-    }
-
-    async componentDidMount() {
-        // const url = getSocketUrl()
-        // console.log(url)
-        // ws = new WebSocket(url)
-        // ws.onmessage = (ev) => {
-        //     appendMessage(JSON.parse(ev.data))
-        // };
-
     }
 
     render() {

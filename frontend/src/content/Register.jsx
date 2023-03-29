@@ -2,6 +2,7 @@ import React, {useState} from "react";
 import axios from "axios";
 import "./css/Register.css";
 import {useNavigate} from "react-router";
+import { URL } from "./App.jsx"
 
 export default function Register() {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function Register() {
             "surname": surname,
         }
 
-        axios.post("http://127.0.0.1:8000/auth/register", data)
+        axios.post(`${URL}/auth/register`, data)
             .then(navigate("/login"))
             .catch(err => document.getElementById("status").textContent = err.response.data.detail)
     }
