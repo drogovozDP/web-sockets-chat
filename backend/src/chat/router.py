@@ -12,7 +12,7 @@ from backend.src.chat import utils
 
 
 router = APIRouter(
-    prefix="/api/chat",
+    prefix="/chat",
     tags=["Chat"]
 )
 

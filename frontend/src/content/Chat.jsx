@@ -245,7 +245,7 @@ export default class Chat extends React.Component {
     }
 
     create_websocket_connection = () => {
-        const url = `ws://${URL.replace("http://", "")}/chat/ws/${this.state.user_id}`
+        const url = `ws://${URL.replace("http://", "").replace("/api", "")}/wsapp/${this.state.user_id}`
         const ws = new WebSocket(url)
         ws.onmessage = async (ev) => {
             let message = JSON.parse(ev.data)
@@ -262,8 +262,7 @@ export default class Chat extends React.Component {
         this.setState({ "user_id": r.data.id })
 
         this.create_websocket_connection()
-
-        let chat_response = await axios.get(`${URL}/chat`)
+        let chat_response = await axios.get(`http://127.0.0.1/api/chat/`)
         let chat_list = document.getElementById("chat_list")
 
         for (let i = 0; i < chat_response.data.length; i++) {
