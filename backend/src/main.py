@@ -10,7 +10,6 @@ app = FastAPI(
     title="Chat FastAPI"
 )
 
-# TODO need to put in into .env
 origins = [
     BASE_URL,
 ]

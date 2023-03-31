@@ -7,7 +7,6 @@ load_dotenv()
 SECRET_AUTH = os.environ.get("SECRET_AUTH")
 ALGORITHM = os.environ.get("ALGORITHM")
 BASE_URL = os.environ.get("BASE_URL")
-LIFETIME_SECONDS = int(os.environ.get("LIFETIME_SECONDS"))
 
 STATIC_FILES_PATH = Path("src/media")
 

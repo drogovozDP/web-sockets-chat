@@ -69,7 +69,7 @@ export default class Chat extends React.Component {
             let link = `${URL_MEDIA}/back_media/${message["value"]}`
             let arr = link.split(".")
             let file = null
-            if (arr[arr.length - 1] === "png" || arr[arr.length - 1] === "jpg") {
+            if (arr[arr.length - 1] === "png" || arr[arr.length - 1] === "jpg" || arr[arr.length - 1] === "jpeg") {
                 file = document.createElement("img")
                 file.src = link
             } else {

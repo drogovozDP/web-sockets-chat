@@ -14,5 +14,10 @@ async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Yields database session.
+
+    Returns:
+        Async connection to the database.
+    """
     async with async_session_maker() as session:
         yield session

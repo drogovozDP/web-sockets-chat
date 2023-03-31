@@ -4,7 +4,6 @@ from backend.src.auth.models import auth_user
 
 
 metadata = MetaData()
-# TODO make chat's id UUID
 chat = Table(
     "chat",
     metadata,
@@ -31,7 +30,6 @@ message = Table(
     Column("timestamp", TIMESTAMP, nullable=False),
 )
 
-# TODO we don't need chat_id
 unchecked_message = Table(
     "unchecked_message",
     metadata,

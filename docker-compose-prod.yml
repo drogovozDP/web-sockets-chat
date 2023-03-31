@@ -13,6 +13,7 @@ services:
   frontend:
     build:
       context: frontend/.
+      dockerfile: ./Dockerfile-prod
     ports:
       - 3000:3000
     container_name: frontend
@@ -41,6 +42,7 @@ services:
     volumes:
       - ./nginx/prod/:/etc/nginx/conf.d/
       - ./backend/src/media:/app/media
+      - ./frontend/build/:/app/static
     depends_on:
       backend:
         condition: service_started
@@ -51,4 +53,6 @@ volumes:
   postgres_data:
     driver: local
   media:
+    driver: local
+  static:
     driver: local
