@@ -6,8 +6,8 @@ WORKDIR /frontend
 COPY . .
 
 RUN npm install
-RUN chmod -R 777 /frontend/build/index.html
 
 EXPOSE 3000
 
 CMD ["npm", "run", "build"]
+RUN chmod -R 777 /frontend/build/index.html
