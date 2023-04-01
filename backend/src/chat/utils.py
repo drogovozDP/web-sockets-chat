@@ -114,25 +114,6 @@ async def create_chat(
     return {"chat_name": chat_name, "chat_id": chat_id}
 
 
-async def get_amount_of_unchecked_messages_in_one_chat(user_id: int, chat_id: int):
-    """Gets amount of unchecked messages in the specific chat for the specific user.
-    Args:
-        user_id: Database user id.
-        chat_id: Database chat id.
-
-    Returns:
-        Amount of unchecked messages for the specific user in the specific chat.
-    """
-    async_session = anext(get_async_session())
-    session = await async_session
-    unchecked = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == user_id).subquery()
-    query = select(func.count(message.c.id).label("message_amount"))\
-        .join(unchecked).filter(unchecked.c.message_id == message.c.id)\
-        .where(message.c.chat_id == chat_id)
-    result = await session.execute(query)
-    return result.all()[0][0]
-
-
 async def get_users_in_chat(
         user_id: int,
         chat_id: int,

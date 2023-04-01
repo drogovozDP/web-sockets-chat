@@ -37,16 +37,16 @@ class ConnectionManager:
         """
         del self.userid_to_socket[user_id]
 
-    async def create_chat(self, user_id: int, message: dict):
+    async def _create_chat(self, user_id: int, message: dict):
         """Creates new chat and propagates this to all connected users.
         Args:
             user_id: Database user id.
             message: Message from WebSocket connection.
         """
         chat_details = await utils.create_chat(user_id, message["value"])
-        await self.propagate_message(user_id, {**chat_details, **message})
+        await self._propagate_message(user_id, {**chat_details, **message})
 
-    async def check_message(self, user_id: int, chat_id: int):
+    async def _check_message(self, user_id: int, chat_id: int):
         """Deletes unchecked messages for the specific user in the specific chat.
         Args:
             user_id: Database user id.
@@ -54,7 +54,7 @@ class ConnectionManager:
         """
         await utils.check_messages_in_the_chat(user_id, chat_id)
 
-    async def edit_message(self, user_id: int, message: dict):
+    async def _edit_message(self, user_id: int, message: dict):
         """Updates message content.
         Args:
             user_id: Database user id.
@@ -64,9 +64,9 @@ class ConnectionManager:
         is_text = await utils.validate_message_content(message["message_id"])
         if is_owner and is_text:
             await utils.edit_message(message["message_id"], message["value"])
-            await self.propagate_message(user_id, message)
+            await self._propagate_message(user_id, message)
 
-    async def propagate_message(self, user_id, message):
+    async def _propagate_message(self, user_id, message):
         """Propagates messages to all connected users.
         Args:
             user_id: Database user id.
@@ -84,14 +84,14 @@ class ConnectionManager:
                 **message
             }))
 
-    async def send_message(self, user_id, message: dict):
+    async def _send_message(self, user_id, message: dict):
         """Saves a received message to the database and propagates it to all connected users.
         Args:
             user_id: Database user id.
             message: Message from WebSocket connection.
         """
         message_id = await utils.save_message(user_id, message["chat_id"], message["value"], message["type"])
-        await self.propagate_message(user_id, {"id": message_id, "sender": user_id, **message})
+        await self._propagate_message(user_id, {"id": message_id, "sender": user_id, **message})
 
     async def broadcast(self, user_id: int, message: str):
         """Receives a message from all connected users, processes it and broadcasts the result to the connected users.
@@ -102,16 +102,16 @@ class ConnectionManager:
         message = json.loads(message)
         ws_type = message["ws_type"]
         if ws_type == "send_message":
-            await self.send_message(user_id, message)
+            await self._send_message(user_id, message)
 
         elif ws_type == "check_message":
-            await self.check_message(user_id, message["chat_id"])
+            await self._check_message(user_id, message["chat_id"])
 
         elif ws_type == "edit_message":
-            await self.edit_message(user_id, message)
+            await self._edit_message(user_id, message)
 
         elif ws_type == "create_chat":
-            await self.create_chat(user_id, message)
+            await self._create_chat(user_id, message)
 
 
 manager = ConnectionManager()
