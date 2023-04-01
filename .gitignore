@@ -6,4 +6,3 @@ __pycache__
 /backend/src/staticfiles
 /backend/migrations/.DS_Store
 /backend/migrations/versions/.DS_Store
-/backend/src/media/.DS_Store
