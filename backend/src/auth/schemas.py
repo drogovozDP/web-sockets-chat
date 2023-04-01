@@ -16,6 +16,16 @@ class UserRead(schemas.BaseUser[int]):
     is_verified: bool = False
 
 
+class UserResponse(schemas.BaseUser[int]):
+    """
+    Schema for user responding.
+    """
+    id: int
+    email: str
+    name: str
+    surname: str
+
+
 class UserCreate(schemas.BaseUserCreate):
     """
     Schema for user creations.

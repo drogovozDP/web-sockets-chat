@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.database import get_async_session
-from backend.src.auth.schemas import UserCreate, UserRead
+from backend.src.auth.schemas import UserCreate, UserRead, UserResponse
 from backend.src.auth import utils
 
 
@@ -65,12 +65,12 @@ async def get_all_users(
         All existing users;
     """
     users = await utils.get_all_users(user.id, session)
-    return [{
+    return [UserResponse(**{
         "id": user.id,
         "email": user.email,
         "name": user.name,
         "surname": user.surname,
-    } for user in users]
+    }) for user in users]
 
 
 @router.get("/api/users/me")
@@ -82,9 +82,9 @@ async def get_user(user: UserRead = Depends(utils.get_current_user)):
     Returns:
         Current logged-in user.
     """
-    return {
+    return UserResponse(**{
         "id": user.id,
         "email": user.email,
         "name": user.name,
         "surname": user.surname,
-    } if user is not None else None
+    }) if user is not None else None
