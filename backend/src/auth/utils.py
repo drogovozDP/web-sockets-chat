@@ -60,10 +60,10 @@ async def authenticate_user(email: str, password: str, session: AsyncSession):
     """
     user = await get_user_by_email(email, session)
 
-    if user is None or not hash.bcrypt.verify(password, user.hashed_password):
-        return False
+    if user and hash.bcrypt.verify(password, user.hashed_password):
+        return user
 
-    return user
+    return False
 
 
 async def create_token(user: auth_user):
@@ -75,10 +75,7 @@ async def create_token(user: auth_user):
         Dictionary of access token and token type.
     """
     token = jwt.encode(
-        {
-            "email": user.email,
-            "hashed_password": user.hashed_password,
-        },
+        {"email": user.email},
         SECRET_AUTH, algorithm=ALGORITHM
     )
     return dict(access_token=token, token_type="bearer")
