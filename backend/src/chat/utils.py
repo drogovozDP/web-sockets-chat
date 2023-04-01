@@ -144,8 +144,9 @@ async def get_users_in_chat(
     return result
 
 
-async def get_online_users_in_chat(chat_id: int, online_user_ids: List[int]):
+async def _get_online_users_in_chat(chat_id: int, online_user_ids: List[int]):
     """Gets intersection between given list of user ids and user ids in the specific chat.
+    This function is internal.
     Args:
         chat_id: Database chat id.
         online_user_ids: List of user ids.

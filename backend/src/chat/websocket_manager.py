@@ -72,7 +72,7 @@ class ConnectionManager:
             user_id: Database user id.
             message: Message from WebSocket connection.
         """
-        online_users_ids = await utils.get_online_users_in_chat(
+        online_users_ids = await utils._get_online_users_in_chat(
             message["chat_id"],
             list(self.userid_to_socket.keys())
         )
