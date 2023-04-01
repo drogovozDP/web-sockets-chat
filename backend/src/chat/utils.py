@@ -261,7 +261,7 @@ async def check_if_user_in_chat(user_id, chat_id, session: AsyncSession):
     query = select(user_chat).where(and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id))
     result = await session.execute(query)
     user_in_chat = result.fetchone()
-    return True if user_in_chat is not None else False
+    return user_in_chat is not None
 
 
 async def save_file(file: UploadFile, chat_id: int, user_id: int, session: AsyncSession):
