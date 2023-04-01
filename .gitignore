@@ -1,4 +1,9 @@
 .idea
 __pycache__
 .env
+.DS_Store
 /backend/src/media/*
+/backend/src/staticfiles
+/backend/migrations/.DS_Store
+/backend/migrations/versions/.DS_Store
+/backend/src/media/.DS_Store
