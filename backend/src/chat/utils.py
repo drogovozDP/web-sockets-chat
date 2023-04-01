@@ -134,17 +134,22 @@ async def get_amount_of_unchecked_messages_in_one_chat(user_id: int, chat_id: in
 
 
 async def get_users_in_chat(
+        user_id: int,
         chat_id: int,
         session: AsyncSession,
 ):
     """Gets users in the specific chat.
     Args:
+        user_id: Database user id.
         chat_id: Database chat id.
         session: A database async session.
 
     Returns:
         Users in the specific chat.
     """
+    user_in_chat = await check_if_user_in_chat(user_id, chat_id, session)
+    if not user_in_chat:
+        return False
     user_ids = select(user_chat.c.user_id).where(user_chat.c.chat_id == chat_id).subquery()
     query = select(
         auth_user.c.id,
@@ -218,15 +223,16 @@ async def check_messages_in_the_chat(user_id: int, chat_id: int):
     await session.commit()
 
 
-async def save_unchecked_message(message_id: int, chat_id: int):
+async def save_unchecked_message(user_id: int, message_id: int, chat_id: int):
     """Saves unchecked messages from the database for the specific user in the specific chat.
     Args:
+        user_id: Database user id.
         message_id: Database message id.
         chat_id: Database chat id.
     """
     async_session = anext(get_async_session())
     session = await async_session
-    users = await get_users_in_chat(chat_id, session)
+    users = await get_users_in_chat(user_id, chat_id, session)
     stmt = insert(unchecked_message).values([
         {"message_id": message_id, "user_id": user[0]} for user in users
     ])
@@ -257,7 +263,7 @@ async def save_message(user_id: int, chat_id: int, value: str, message_type: str
     result = await session.execute(stmt)
     await session.commit()
     message_id = result.fetchone()[0]
-    await save_unchecked_message(message_id, chat_id)
+    await save_unchecked_message(user_id, message_id, chat_id)
     return message_id
 
 

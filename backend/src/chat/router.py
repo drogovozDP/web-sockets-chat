@@ -84,8 +84,8 @@ async def get_users_in_chat(
     Returns:
         All users in the specific chat.
     """
-    result = await utils.get_users_in_chat(chat_id, session)
-    if len([1 for db_user in result if db_user[0] == user.id]) == 0:
+    result = await utils.get_users_in_chat(user.id, chat_id, session)
+    if not result:
         raise HTTPException(status_code=401, detail="Invalid Credentials.")
     return result
 
