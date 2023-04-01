@@ -2,6 +2,7 @@ import React from "react";
 import axios from "axios";
 import {fetchToken, setToken} from "./Auth";
 import "./css/Chat.css";
+import { URL, URL_MEDIA } from "./App.jsx"
 
 
 export default class Chat extends React.Component {
@@ -23,7 +24,6 @@ export default class Chat extends React.Component {
     receiveMessage = (message) => {
         if (message.ws_type === "send_message") {
             if (message.chat_id === this.state.chat_id) {
-                console.log(message)
                 this.appendMessage(message)
                 this.check_messages()
                 this.set_scroll_to_bottom("messages")
@@ -66,10 +66,10 @@ export default class Chat extends React.Component {
         avatar.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
         content.style.textAlign = this.state.user_id == message["sender"] ? "left" : "right"
         if (message["type"] === "file") {
-            let link = `http://127.0.0.1/back_static/${message["value"]}`
+            let link = `${URL_MEDIA}/back_media/${message["value"]}`
             let arr = link.split(".")
             let file = null
-            if (arr[arr.length - 1] === "png" || arr[arr.length - 1] === "jpg") {
+            if (arr[arr.length - 1] === "png" || arr[arr.length - 1] === "jpg" || arr[arr.length - 1] === "jpeg") {
                 file = document.createElement("img")
                 file.src = link
             } else {
@@ -102,7 +102,7 @@ export default class Chat extends React.Component {
     }
 
     setUncheckedMessageAmount = async (id) => {
-        axios.get(`http://127.0.0.1:8000/chat/${id}/unchecked`)
+        axios.get(`${URL}/chat/${id}/unchecked`)
         .then(function(r) {
             let chat_li = document.getElementById(`chat_${id}`)
             let name = chat_li.textContent.split(":")
@@ -171,7 +171,7 @@ export default class Chat extends React.Component {
     }
 
     get_messages_in_the_chat_from_db = async () => {
-        let messages = await axios.get(`http://127.0.0.1:8000/chat/${this.state.chat_id}?page=${this.state.page}`)
+        let messages = await axios.get(`${URL}/chat/${this.state.chat_id}?page=${this.state.page}`)
         let messages_ul = document.getElementById("messages")
         let old_scroll_height = messages_ul.scrollHeight
         for (let i = 0; i < messages.data.length; i++) {
@@ -225,7 +225,7 @@ export default class Chat extends React.Component {
     }
 
     prepare_chat_creation = async () => {
-        let response = await axios.get("http://127.0.0.1:8000/auth/api/users")
+        let response = await axios.get(`${URL}/auth/api/users`)
         let checkboxes = document.getElementById("checkboxes")
         checkboxes.innerHTML = ""
         response.data.forEach(function(user, _) {
@@ -245,9 +245,7 @@ export default class Chat extends React.Component {
     }
 
     create_websocket_connection = () => {
-//         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-//         const url = `ws://127.0.0.1:8000/chat/ws`
-        const url = `ws://127.0.0.1:8000/chat/ws/${this.state.user_id}`
+        const url = `ws://${URL.replace("http://", "").replace("/api", "")}/wsapp/${this.state.user_id}`
         const ws = new WebSocket(url)
         ws.onmessage = async (ev) => {
             let message = JSON.parse(ev.data)
@@ -259,13 +257,12 @@ export default class Chat extends React.Component {
 
     async componentDidMount() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-        const r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
+        const r = await axios.get(`${URL}/auth/api/users/me`,
             {"accept": "application/json"})
         this.setState({ "user_id": r.data.id })
 
         this.create_websocket_connection()
-
-        let chat_response = await axios.get("http://127.0.0.1:8000/chat")
+        let chat_response = await axios.get(`${URL}/chat/`)
         let chat_list = document.getElementById("chat_list")
 
         for (let i = 0; i < chat_response.data.length; i++) {
@@ -283,7 +280,7 @@ export default class Chat extends React.Component {
         let fileupload = document.getElementById("fileupload").lastChild
         formData.append("file", fileupload.files[0]);
         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-        let r = await axios.post(`http://127.0.0.1:8000/chat/${this.state.chat_id}/upload_file`, formData)
+        let r = await axios.post(`${URL}/chat/${this.state.chat_id}/upload_file`, formData)
 
         let message = JSON.stringify({
             "ws_type": "send_message",

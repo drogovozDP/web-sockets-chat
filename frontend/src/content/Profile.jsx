@@ -1,5 +1,5 @@
 import React from "react";
-import { ws } from "./App"
+import { ws, URL } from "./App"
 import axios from "axios";
 import {fetchToken} from "./Auth";
 
@@ -14,7 +14,7 @@ export default class Profile extends React.Component {
 
     componentDidMount = async () => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${fetchToken()}`
-        const r = await axios.get("http://127.0.0.1:8000/auth/api/users/me",
+        const r = await axios.get(`${URL}/auth/api/users/me`,
             {"accept": "application/json"})
         this.display_current_user(r.data.name, r.data.surname)
     }
