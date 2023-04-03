@@ -52,7 +52,7 @@ class ConnectionManager:
             user_id: Database user id.
             chat_id: Database chat id.
         """
-        await utils.check_messages_in_the_chat(user_id, message["chat_id"])
+        await utils.check_messages_in_the_chat(user_id, int(message["chat_id"]))
 
     async def _edit_message(self, user_id: int, message: dict):
         """Updates message content.
@@ -100,7 +100,7 @@ class ConnectionManager:
             message: Message from WebSocket connection.
         """
         message = json.loads(message)
-        await getattr(self, f"_{message['ws_type']}")(user_id, message["ws_type"])
+        await getattr(self, f"_{message['ws_type']}")(user_id, message)
 
 
 manager = ConnectionManager()

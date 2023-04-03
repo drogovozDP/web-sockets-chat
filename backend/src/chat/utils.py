@@ -194,12 +194,9 @@ async def check_messages_in_the_chat(user_id: int, chat_id: int):
 
     to_delete = select(unchecked_message.c.id).join(unchecked_messages) \
         .filter(unchecked_messages.c.id == unchecked_message.c.message_id) \
-        .where(unchecked_message.c.user_id == user_id)
+        .where(unchecked_message.c.user_id == user_id).subquery()
 
-    to_delete = await session.execute(to_delete)
-    to_delete = to_delete.all()
-
-    await session.execute(delete(unchecked_message).where(or_(unchecked_message.c.id == del_id[0] for del_id in to_delete)))
+    await session.execute(delete(unchecked_message).where(unchecked_message.c.id.in_(to_delete)))
     await session.commit()
 
 
