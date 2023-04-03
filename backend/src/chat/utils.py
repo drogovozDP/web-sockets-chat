@@ -14,7 +14,7 @@ from backend.src.database import get_async_session
 from backend.src.config import STATIC_FILES_PATH
 
 
-async def get_user_chat_list(user_id: int, session: AsyncSession):
+async def get_user_chat_list(current_user_id: int, session: AsyncSession):
     """Gets from database user chat list.
     Args:
         user_id Database user id.
@@ -23,20 +23,20 @@ async def get_user_chat_list(user_id: int, session: AsyncSession):
     Returns:
          Chat list.
     """
-    chat_ids = select(user_chat).where(user_chat.c.user_id == user_id).subquery()
+    chat_ids = select(user_chat).where(user_chat.c.user_id == current_user_id).subquery()
     return (await session.execute(select(chat).join(chat_ids).filter(chat_ids.c.chat_id == chat.c.id))).all()
 
 
 async def get_messages_from_specific_chat(
         chat_id: int,
-        user_id: int,
+        current_user_id: int,
         page: int,
         session: AsyncSession,
 ):
     """Gets from database messages from the specific chat.
     Args:
         chat_id: Database chat id.
-        user_id: Database user id.
+        current_user_id: Database user id.
         page: Offset for messages.
         session: A database async session.
 
@@ -44,7 +44,7 @@ async def get_messages_from_specific_chat(
         Messages from the specific chat.
     """
     validated_chat_id = select(user_chat.c.chat_id).where(
-        and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id)
+        and_(user_chat.c.user_id == current_user_id, user_chat.c.chat_id == chat_id)
     ).subquery()
 
     messages = select(message, auth_user.c.name, auth_user.c.surname) \
@@ -56,20 +56,20 @@ async def get_messages_from_specific_chat(
 
 
 async def get_amount_of_unchecked_messages(
-        user_id: int,
+        current_user_id: int,
         chat_id: int,
         session: AsyncSession,
 ):
     """Counts unchecked messages for the specific user in the specific chat.
     Args:
-        user_id: Database user id.
+        current_user_id: Database user id.
         chat_id: Database chat id.
         session: A database async session.
 
     Returns:
         Amount of unchecked messages for the specific user.
     """
-    unchecked = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == user_id).subquery()
+    unchecked = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == current_user_id).subquery()
     return (
         await session.execute(
             select(message.c.chat_id, func.count(message.c.value).label("unchecked_messages"))
@@ -110,20 +110,20 @@ async def create_chat(
 
 
 async def get_users_in_chat(
-        user_id: int,
+        current_user_id: int,
         chat_id: int,
         session: AsyncSession,
 ):
     """Gets users in the specific chat.
     Args:
-        user_id: Database user id.
+        current_user_id: Database user id.
         chat_id: Database chat id.
         session: A database async session.
 
     Returns:
         Users in the specific chat.
     """
-    user_in_chat = await check_if_user_in_chat(user_id, chat_id, session)
+    user_in_chat = await check_if_user_in_chat(current_user_id, chat_id, session)
     if not user_in_chat:
         return False
 
@@ -160,7 +160,7 @@ async def _get_online_users_in_chat(chat_id: int, online_user_ids: List[int]):
     return [user[0] for user in result]
 
 
-async def get_sender_name_surname(user_id):
+async def get_sender_name_surname(user_id: int):
     """Gets from the database name and surname by id.
     Args:
         user_id: Database user id.
@@ -178,39 +178,39 @@ async def get_sender_name_surname(user_id):
     ).all()[0]
 
 
-async def check_messages_in_the_chat(user_id: int, chat_id: int):
+async def check_messages_in_the_chat(current_user_id: int, chat_id: int):
     """Removes unchecked messages from the database for the specific user in the specific chat.
     Args:
-        user_id: Database user id.
+        current_user_id: Database user id.
         chat_id: Database chat id.
     """
     async_session = anext(get_async_session())
     session = await async_session
 
-    unchecked_ids = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == user_id).subquery()
+    unchecked_ids = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == current_user_id).subquery()
 
     unchecked_messages = select(message.c.id).join(unchecked_ids) \
         .filter(and_(message.c.chat_id == chat_id, unchecked_ids.c.message_id == message.c.id)).subquery()
 
     to_delete = select(unchecked_message.c.id).join(unchecked_messages) \
         .filter(unchecked_messages.c.id == unchecked_message.c.message_id) \
-        .where(unchecked_message.c.user_id == user_id).subquery()
+        .where(unchecked_message.c.user_id == current_user_id).subquery()
 
     await session.execute(delete(unchecked_message).where(unchecked_message.c.id.in_(to_delete)))
     await session.commit()
 
 
-async def save_unchecked_message(user_id: int, message_id: int, chat_id: int):
+async def save_unchecked_message(current_user_id: int, message_id: int, chat_id: int):
     """Saves unchecked messages from the database for the specific user in the specific chat.
     Args:
-        user_id: Database user id.
+        current_user_id: Database user id.
         message_id: Database message id.
         chat_id: Database chat id.
     """
     async_session = anext(get_async_session())
     session = await async_session
 
-    users = await get_users_in_chat(user_id, chat_id, session)
+    users = await get_users_in_chat(current_user_id, chat_id, session)
 
     await session.execute(
         insert(unchecked_message).values([
@@ -220,10 +220,10 @@ async def save_unchecked_message(user_id: int, message_id: int, chat_id: int):
     await session.commit()
 
 
-async def save_message(user_id: int, chat_id: int, value: str, message_type: str):
+async def save_message(current_user_id: int, chat_id: int, value: str, message_type: str):
     """Saves message to the database for the specific user in the specific chat.
     Args:
-        user_id: Database user id.
+        current_user_id: Database user id.
         chat_id: Database chat id.
         value: Message content.
         message_type: Type of message.
@@ -238,7 +238,7 @@ async def save_message(user_id: int, chat_id: int, value: str, message_type: str
         insert(message).values(
             type=message_type,
             value=value,
-            sender=user_id,
+            sender=current_user_id,
             chat_id=chat_id,
             timestamp=datetime.datetime.utcnow(),
         ).returning(message.c.id)
@@ -246,14 +246,14 @@ async def save_message(user_id: int, chat_id: int, value: str, message_type: str
     await session.commit()
 
     new_message_id = new_message_id.fetchone()[0]
-    await save_unchecked_message(user_id, new_message_id, chat_id)
+    await save_unchecked_message(current_user_id, new_message_id, chat_id)
     return new_message_id
 
 
-async def check_if_user_in_chat(user_id, chat_id, session: AsyncSession):
+async def check_if_user_in_chat(current_user_id, chat_id, session: AsyncSession):
     """Checks if the user in the chat.
     Args:
-        user_id: Database user id.
+        current_user_id: Database user id.
         chat_id: Database chat id.
 
     Returns:
@@ -261,24 +261,24 @@ async def check_if_user_in_chat(user_id, chat_id, session: AsyncSession):
     """
     user_in_chat = (
         await session.execute(
-            select(user_chat).where(and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id))
+            select(user_chat).where(and_(user_chat.c.user_id == current_user_id, user_chat.c.chat_id == chat_id))
         )
     ).fetchone()
     return user_in_chat is not None
 
 
-async def save_file(file: UploadFile, chat_id: int, user_id: int, session: AsyncSession):
+async def save_file(file: UploadFile, chat_id: int, current_user_id: int, session: AsyncSession):
     """Saves the file in the specific chat.
     Args:
         file: File object.
         chat_id: Database chat id.
-        user_id: Database user id.
+        current_user_id: Database user id.
         session: A database async session.
 
     Returns:
         Dictionary of saving status and details.
     """
-    user_in_chat = await check_if_user_in_chat(user_id, chat_id, session)
+    user_in_chat = await check_if_user_in_chat(current_user_id, chat_id, session)
     if not user_in_chat:
         return {"status": 400, "detail": "Bad credentials."}
     dir_name = STATIC_FILES_PATH / str(chat_id)
@@ -289,11 +289,11 @@ async def save_file(file: UploadFile, chat_id: int, user_id: int, session: Async
     return {"status": 200, "detail": f"File {file.filename} saved!", "file_path": Path(str(chat_id)) / file_name}
 
 
-async def validate_message_author(message_id: int, user_id: int, chat_id: int):
+async def validate_message_author(message_id: int, current_user_id: int, chat_id: int):
     """Checks if user is message author.
     Args:
         message_id: Database message id.
-        user_id: Database user id.
+        current_user_id: Database user id.
         chat_id: Database chat id.
 
     Returns:
@@ -308,7 +308,7 @@ async def validate_message_author(message_id: int, user_id: int, chat_id: int):
         )
     ).fetchone()
 
-    return msg[0] == user_id and msg[1] == chat_id
+    return msg[0] == current_user_id and msg[1] == chat_id
 
 
 async def validate_message_content(message_id: int):

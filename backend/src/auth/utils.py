@@ -96,12 +96,12 @@ async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSe
     return user
 
 
-async def get_all_users(user_id: int, session: AsyncSession):
+async def get_all_users(current_user_id: int, session: AsyncSession):
     """Gets all users from the database.
     Args:
-        user_id: database id of a user.
+        current_user_id: database id of a user.
         session: A database async session.
     Returns:
         List of all users.
     """
-    return (await session.execute(select(auth_user).where(auth_user.c.id != user_id))).all()
+    return (await session.execute(select(auth_user).where(auth_user.c.id != current_user_id))).all()
