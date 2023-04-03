@@ -93,7 +93,7 @@ async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSe
     try:
         payload = jwt.decode(token, SECRET_AUTH, algorithms=[ALGORITHM])
         user = await get_user_by_email(payload["email"], session)
-    except:
+    except jwt.exceptions.DecodeError:
         raise HTTPException(status_code=401, detail="Invalid Email or Password.")
     return user
 
