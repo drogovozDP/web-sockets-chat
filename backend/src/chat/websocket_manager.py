@@ -46,13 +46,13 @@ class ConnectionManager:
         chat_details = await utils.create_chat(user_id, message["value"])
         await self._propagate_message(user_id, {**chat_details, **message})
 
-    async def _check_message(self, user_id: int, chat_id: int):
+    async def _check_message(self, user_id: int, message: dict):
         """Deletes unchecked messages for the specific user in the specific chat.
         Args:
             user_id: Database user id.
             chat_id: Database chat id.
         """
-        await utils.check_messages_in_the_chat(user_id, chat_id)
+        await utils.check_messages_in_the_chat(user_id, message["chat_id"])
 
     async def _edit_message(self, user_id: int, message: dict):
         """Updates message content.
@@ -100,18 +100,7 @@ class ConnectionManager:
             message: Message from WebSocket connection.
         """
         message = json.loads(message)
-        ws_type = message["ws_type"]
-        if ws_type == "send_message":
-            await self._send_message(user_id, message)
-
-        elif ws_type == "check_message":
-            await self._check_message(user_id, message["chat_id"])
-
-        elif ws_type == "edit_message":
-            await self._edit_message(user_id, message)
-
-        elif ws_type == "create_chat":
-            await self._create_chat(user_id, message)
+        await getattr(self, f"_{message['ws_type']}")(user_id, message["ws_type"])
 
 
 manager = ConnectionManager()
