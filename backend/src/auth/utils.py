@@ -20,10 +20,8 @@ async def get_user_by_email(email: str, session: AsyncSession):
     Returns:
         User.
     """
-    query = select(auth_user).where(auth_user.c.email == email)
-    result = await session.execute(query)
-    user = result.all()
-    return user[0] if len(user) != 0 else None
+    user = (await session.execute(select(auth_user).where(auth_user.c.email == email))).fetchone()
+    return user if user else None
 
 
 async def create_user(user: UserCreate, session: AsyncSession):
@@ -35,7 +33,7 @@ async def create_user(user: UserCreate, session: AsyncSession):
     Returns:
         User creation status.
     """
-    stmt = (
+    create_new_user = (
         insert(auth_user).values(
             email=user.email,
             name=user.name,
@@ -43,7 +41,7 @@ async def create_user(user: UserCreate, session: AsyncSession):
             hashed_password=hash.bcrypt.hash(user.password),
         )
     )
-    await session.execute(stmt)
+    await session.execute(create_new_user)
     await session.commit()
     return {"status": 200, "details": "User has been created."}
 
@@ -106,6 +104,4 @@ async def get_all_users(user_id: int, session: AsyncSession):
     Returns:
         List of all users.
     """
-    query = select(auth_user).where(auth_user.c.id != user_id)
-    result = await session.execute(query)
-    return result.all()
+    return (await session.execute(select(auth_user).where(auth_user.c.id != user_id))).all()

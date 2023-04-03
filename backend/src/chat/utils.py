@@ -23,10 +23,8 @@ async def get_user_chat_list(user_id: int, session: AsyncSession):
     Returns:
          Chat list.
     """
-    subquery = select(user_chat).where(user_chat.c.user_id == user_id).subquery()
-    query = select(chat).join(subquery).filter(subquery.c.chat_id == chat.c.id)
-    result = await session.execute(query)
-    return result.all()
+    chat_ids = select(user_chat).where(user_chat.c.user_id == user_id).subquery()
+    return (await session.execute(select(chat).join(chat_ids).filter(chat_ids.c.chat_id == chat.c.id))).all()
 
 
 async def get_messages_from_specific_chat(
@@ -45,17 +43,16 @@ async def get_messages_from_specific_chat(
     Returns:
         Messages from the specific chat.
     """
-    subquery = select(user_chat.c.chat_id).where(
+    validated_chat_id = select(user_chat.c.chat_id).where(
         and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id)
     ).subquery()
 
-    query = select(message, auth_user.c.name, auth_user.c.surname) \
-        .where(message.c.chat_id == subquery) \
+    messages = select(message, auth_user.c.name, auth_user.c.surname) \
+        .where(message.c.chat_id == validated_chat_id) \
         .join(auth_user).filter(auth_user.c.id == message.c.sender) \
         .order_by(desc(message.c.timestamp))
-    query = query.limit(10).offset(10 * page)
-    result = await session.execute(query)
-    return result.all()[::-1]
+    messages = messages.limit(10).offset(10 * page)
+    return (await session.execute(messages)).all()[::-1]
 
 
 async def get_amount_of_unchecked_messages(
@@ -73,12 +70,13 @@ async def get_amount_of_unchecked_messages(
         Amount of unchecked messages for the specific user.
     """
     unchecked = select(unchecked_message.c.message_id).where(unchecked_message.c.user_id == user_id).subquery()
-    query = select(message.c.chat_id, func.count(message.c.value).label("unchecked_messages"))\
-        .join(unchecked).filter(message.c.id == unchecked.c.message_id)\
-        .where(message.c.chat_id == chat_id)\
-        .group_by(message.c.chat_id)
-    result = await session.execute(query)
-    return result.all()
+    return (
+        await session.execute(
+            select(message.c.chat_id, func.count(message.c.value).label("unchecked_messages"))
+            .join(unchecked).filter(message.c.id == unchecked.c.message_id)
+            .where(message.c.chat_id == chat_id)
+            .group_by(message.c.chat_id))
+    ).all()
 
 
 async def create_chat(
@@ -95,21 +93,18 @@ async def create_chat(
     """
     async_session = anext(get_async_session())
     session = await async_session
-    result = await session.execute(select(auth_user.c.id, auth_user.c.name).where(auth_user.c.id.in_(user_ids)))
-    users = result.all()
-    result = await session.execute(select(auth_user.c.id, auth_user.c.name).where(auth_user.c.id == author_id))
-    author = result.fetchone()
-    chat_name = f"{author['name']} {' '.join([user['name'] for user in users])}"
-    stmt = insert(chat).values(
-        name=chat_name
-    ).returning(chat.c.id)
-    result = await session.execute(stmt)
-    chat_id = result.fetchone()[0]
 
-    stmt = insert(user_chat).values([{"user_id": author["id"], "chat_id": chat_id}] + [
+    users = (await session.execute(select(auth_user.c.id, auth_user.c.name).where(auth_user.c.id.in_(user_ids)))).all()
+    author = (
+        await session.execute(select(auth_user.c.id, auth_user.c.name).where(auth_user.c.id == author_id))).fetchone()
+
+    chat_name = f"{author['name']} {' '.join([user['name'] for user in users])}"
+    chat_id = (await session.execute(insert(chat).values(name=chat_name).returning(chat.c.id))).fetchone()[0]
+
+    await session.execute(insert(user_chat).values([{"user_id": author["id"], "chat_id": chat_id}] + [
         {"user_id": user["id"], "chat_id": chat_id} for user in users
-    ])
-    await session.execute(stmt)
+    ]))
+
     await session.commit()
     return {"chat_name": chat_name, "chat_id": chat_id}
 
@@ -131,17 +126,19 @@ async def get_users_in_chat(
     user_in_chat = await check_if_user_in_chat(user_id, chat_id, session)
     if not user_in_chat:
         return False
+
     user_ids = select(user_chat.c.user_id).where(user_chat.c.chat_id == chat_id).subquery()
-    query = select(
-        auth_user.c.id,
-        auth_user.c.name,
-        auth_user.c.surname
-    ).join(user_ids).filter(
-        user_ids.c.user_id == auth_user.c.id
-    )
-    result = await session.execute(query)
-    result = result.all()
-    return result
+    return (
+        await session.execute(
+            select(
+                auth_user.c.id,
+                auth_user.c.name,
+                auth_user.c.surname
+            ).join(user_ids).filter(
+                user_ids.c.user_id == auth_user.c.id
+            )
+        )
+    ).all()
 
 
 async def _get_online_users_in_chat(chat_id: int, online_user_ids: List[int]):
@@ -173,10 +170,12 @@ async def get_sender_name_surname(user_id):
     """
     async_session = anext(get_async_session())
     session = await async_session
-    query = select(auth_user.c.name, auth_user.c.surname).where(auth_user.c.id == user_id)
-    result = await session.execute(query)
-    result = result.all()
-    return result[0]
+
+    return (
+        await session.execute(
+            select(auth_user.c.name, auth_user.c.surname).where(auth_user.c.id == user_id)
+        )
+    ).all()[0]
 
 
 async def check_messages_in_the_chat(user_id: int, chat_id: int):
@@ -200,8 +199,7 @@ async def check_messages_in_the_chat(user_id: int, chat_id: int):
     to_delete = await session.execute(to_delete)
     to_delete = to_delete.all()
 
-    stmt = delete(unchecked_message).where(or_(unchecked_message.c.id == del_id[0] for del_id in to_delete))
-    await session.execute(stmt)
+    await session.execute(delete(unchecked_message).where(or_(unchecked_message.c.id == del_id[0] for del_id in to_delete)))
     await session.commit()
 
 
@@ -214,11 +212,14 @@ async def save_unchecked_message(user_id: int, message_id: int, chat_id: int):
     """
     async_session = anext(get_async_session())
     session = await async_session
+
     users = await get_users_in_chat(user_id, chat_id, session)
-    stmt = insert(unchecked_message).values([
-        {"message_id": message_id, "user_id": user[0]} for user in users
-    ])
-    await session.execute(stmt)
+
+    await session.execute(
+        insert(unchecked_message).values([
+            {"message_id": message_id, "user_id": user[0]} for user in users
+        ])
+    )
     await session.commit()
 
 
@@ -235,18 +236,21 @@ async def save_message(user_id: int, chat_id: int, value: str, message_type: str
     """
     async_session = anext(get_async_session())
     session = await async_session
-    stmt = insert(message).values(
-        type=message_type,
-        value=value,
-        sender=user_id,
-        chat_id=chat_id,
-        timestamp=datetime.datetime.utcnow(),
-    ).returning(message.c.id)
-    result = await session.execute(stmt)
+
+    new_message_id = await session.execute(
+        insert(message).values(
+            type=message_type,
+            value=value,
+            sender=user_id,
+            chat_id=chat_id,
+            timestamp=datetime.datetime.utcnow(),
+        ).returning(message.c.id)
+    )
     await session.commit()
-    message_id = result.fetchone()[0]
-    await save_unchecked_message(user_id, message_id, chat_id)
-    return message_id
+
+    new_message_id = new_message_id.fetchone()[0]
+    await save_unchecked_message(user_id, new_message_id, chat_id)
+    return new_message_id
 
 
 async def check_if_user_in_chat(user_id, chat_id, session: AsyncSession):
@@ -258,9 +262,11 @@ async def check_if_user_in_chat(user_id, chat_id, session: AsyncSession):
     Returns:
         Boolean (a user in the chat or not).
     """
-    query = select(user_chat).where(and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id))
-    result = await session.execute(query)
-    user_in_chat = result.fetchone()
+    user_in_chat = (
+        await session.execute(
+            select(user_chat).where(and_(user_chat.c.user_id == user_id, user_chat.c.chat_id == chat_id))
+        )
+    ).fetchone()
     return user_in_chat is not None
 
 
@@ -298,9 +304,13 @@ async def validate_message_author(message_id: int, user_id: int, chat_id: int):
     """
     async_session = anext(get_async_session())
     session = await async_session
-    query = select(message.c.sender, message.c.chat_id).where(message.c.id == message_id)
-    result = await session.execute(query)
-    msg = result.fetchone()
+
+    msg = (
+        await session.execute(
+            select(message.c.sender, message.c.chat_id).where(message.c.id == message_id)
+        )
+    ).fetchone()
+
     return msg[0] == user_id and msg[1] == chat_id
 
 
@@ -314,9 +324,10 @@ async def validate_message_content(message_id: int):
     """
     async_session = anext(get_async_session())
     session = await async_session
-    query = select(message.c.type).where(message.c.id == message_id)
-    result = await session.execute(query)
-    msg = result.fetchone()
+
+    msg = (
+        await session.execute(select(message.c.type).where(message.c.id == message_id))
+    ).fetchone()
     return msg[0] == "text"
 
 
@@ -328,9 +339,17 @@ async def edit_message(message_id: int, value: str):
     """
     async_session = anext(get_async_session())
     session = await async_session
-    query = select(message.c.timestamp).where(message.c.id == message_id)
-    result = await session.execute(query)
-    timestamp = result.fetchone()[0]
-    stmt = update(message).where(message.c.id == message_id).values(value=value, timestamp=timestamp).returning(message.c.value)
-    await session.execute(stmt)
+
+    timestamp = (
+        await session.execute(
+            select(message.c.timestamp).where(message.c.id == message_id)
+        )
+    ).fetchone()[0]
+
+    await session.execute(
+        update(message).where(message.c.id == message_id).values(
+            value=value,
+            timestamp=timestamp
+        ).returning(message.c.value)
+    )
     await session.commit()
