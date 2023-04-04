@@ -3,7 +3,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.database import get_async_session
-from backend.src.auth.schemas import UserCreate, UserRead, UserResponse
+from backend.src.auth.schemas import (
+    UserCreate,
+    UserRead,
+    UserResponse,
+    RegistrationResponse,
+    TokenResponse
+)
 from backend.src.auth import utils
 
 
@@ -28,7 +34,7 @@ async def register(user: UserCreate, session: AsyncSession = Depends(get_async_s
     if check_user is not None:
         raise HTTPException(status_code=400, detail="Email already in use.")
     response = await utils.create_user(user, session)
-    return response
+    return RegistrationResponse(**response)
 
 
 @router.post("/token")
@@ -48,7 +54,7 @@ async def generate_token(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid Credentials.")
 
-    return await utils.create_token(user)
+    return TokenResponse(**(await utils.create_token(user)))
 
 
 @router.get("/api/users")

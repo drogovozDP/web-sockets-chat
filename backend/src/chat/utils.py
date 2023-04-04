@@ -76,7 +76,7 @@ async def get_amount_of_unchecked_messages(
             .join(unchecked).filter(message.c.id == unchecked.c.message_id)
             .where(message.c.chat_id == chat_id)
             .group_by(message.c.chat_id))
-    ).all()
+    ).fetchone()
 
 
 async def create_chat(
@@ -286,7 +286,7 @@ async def save_file(file: UploadFile, chat_id: int, current_user_id: int, sessio
     file_name = f"{len(os.listdir(dir_name))}-{file.filename}"
     with open(dir_name / file_name, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    return {"status": 200, "detail": f"File {file.filename} saved!", "file_path": Path(str(chat_id)) / file_name}
+    return {"status": 200, "detail": Path(str(chat_id)) / file_name}
 
 
 async def validate_message_author(message_id: int, current_user_id: int, chat_id: int):

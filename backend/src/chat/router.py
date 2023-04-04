@@ -10,6 +10,14 @@ from backend.src.auth.schemas import UserRead
 from backend.src.database import get_async_session
 from backend.src.chat import utils
 
+from backend.src.chat.schemas import (
+    UserIdNameSurname,
+    CreateChatResponse,
+    MessagesFromSpecificChat,
+    GetUsersInChat,
+    UncheckedMessagesAmount,
+    SaveFileResponse,
+)
 
 router = APIRouter(
     prefix="/chat",
@@ -30,7 +38,7 @@ async def get_user_chat_list(
     Returns:
         User's chat list.
     """
-    return await utils.get_user_chat_list(user.id, session)
+    return [UserIdNameSurname(**user) for user in (await utils.get_user_chat_list(user.id, session))]
 
 
 @router.post("/")
@@ -46,7 +54,7 @@ async def create_chat(
         Status code and chat details.
     """
     chat_details = await utils.create_chat(user, users)
-    return {"status": 200, "details": "Chat has been created.", "chat_details": chat_details}
+    return CreateChatResponse(**{"details": "Chat has been created.", **chat_details})
 
 
 @router.get("/{chat_id}")
@@ -66,7 +74,9 @@ async def get_messages_from_specific_chat(
     Returns:
         Messages in the specific chat.
     """
-    return await utils.get_messages_from_specific_chat(chat_id, user.id, page, session)
+    return [MessagesFromSpecificChat(**message) for message in (
+        await utils.get_messages_from_specific_chat(chat_id, user.id, page, session)
+    )]
 
 
 @router.get("/{chat_id}/users")
@@ -84,10 +94,10 @@ async def get_users_in_chat(
     Returns:
         All users in the specific chat.
     """
-    result = await utils.get_users_in_chat(user.id, chat_id, session)
-    if not result:
+    users = await utils.get_users_in_chat(user.id, chat_id, session)
+    if not users:
         raise HTTPException(status_code=401, detail="Invalid Credentials.")
-    return result
+    return [GetUsersInChat(**user) for user in users]
 
 
 @router.get("/{chat_id}/unchecked")
@@ -105,7 +115,10 @@ async def get_amount_of_unchecked_messages(
     Returns:
         Amount of unchecked messages in the specific chat for the specific user.
     """
-    return await utils.get_amount_of_unchecked_messages(user.id, chat_id, session)
+    unchecked_messages = await utils.get_amount_of_unchecked_messages(user.id, chat_id, session)
+    return UncheckedMessagesAmount(
+        **unchecked_messages if unchecked_messages is not None else {"chat_id": chat_id, "unchecked_messages": 0}
+    )
 
 
 @router.post("/{chat_id}/upload_file")
@@ -125,7 +138,10 @@ async def upload_file(
     Returns:
         Status about file saving.
     """
-    return await utils.save_file(file, chat_id, user.id, session)
+    saved_file = await utils.save_file(file, chat_id, user.id, session)
+    if saved_file["status"] == 400:
+        HTTPException(**saved_file)
+    return SaveFileResponse(**saved_file)
 
 
 @router.websocket("/ws/{user_id}")
