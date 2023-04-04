@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 import jwt
 from fastapi import Depends, HTTPException
 from sqlalchemy import select, insert
@@ -11,7 +13,7 @@ from backend.src.auth.models import auth_user
 from backend.src.auth.schemas import UserCreate
 
 
-async def get_user_by_email(email: str, session: AsyncSession):
+async def get_user_by_email(email: str, session: AsyncSession) -> Optional[auth_user]:
     """Gets a user from database by email.
     Args:
         email: user email.
@@ -24,7 +26,7 @@ async def get_user_by_email(email: str, session: AsyncSession):
     return user if user else None
 
 
-async def create_user(user: UserCreate, session: AsyncSession):
+async def create_user(user: UserCreate, session: AsyncSession) -> dict:
     """Creates a new user and saves in the database.
     Args:
         user: A user form for user registration.
@@ -46,7 +48,7 @@ async def create_user(user: UserCreate, session: AsyncSession):
     return {"status": 200, "details": "User has been created."}
 
 
-async def authenticate_user(email: str, password: str, session: AsyncSession):
+async def authenticate_user(email: str, password: str, session: AsyncSession) -> Optional[auth_user]:
     """Authenticates user.
     Args:
         email: user email.
@@ -64,7 +66,7 @@ async def authenticate_user(email: str, password: str, session: AsyncSession):
     return False
 
 
-async def create_token(user: auth_user):
+async def create_token(user: auth_user) -> dict:
     """Creates JWT token for a user.
     Args:
         user: Model from database, auth_user.
@@ -79,7 +81,10 @@ async def create_token(user: auth_user):
     return dict(access_token=token, token_type="bearer")
 
 
-async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSession = Depends(get_async_session)):
+async def get_current_user(
+        token: str = Depends(oauth2_schema),
+        session: AsyncSession = Depends(get_async_session)
+) -> auth_user:
     """Gets user from database based JWT token.
     Args:
         token: JWT token.
@@ -96,7 +101,7 @@ async def get_current_user(token: str = Depends(oauth2_schema), session: AsyncSe
     return user
 
 
-async def get_all_users(current_user_id: int, session: AsyncSession):
+async def get_all_users(current_user_id: int, session: AsyncSession) -> List[auth_user]:
     """Gets all users from the database.
     Args:
         current_user_id: database id of a user.

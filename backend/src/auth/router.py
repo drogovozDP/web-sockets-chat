@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +22,7 @@ router = APIRouter(
 
 
 @router.post("/register")
-async def register(user: UserCreate, session: AsyncSession = Depends(get_async_session)):
+async def register(user: UserCreate, session: AsyncSession = Depends(get_async_session)) -> RegistrationResponse:
     """Takes email, password, name, surname and creates new user. If a user with the same email already exists, then
     raises HTTPException with status code 400.
     Args:
@@ -41,7 +43,7 @@ async def register(user: UserCreate, session: AsyncSession = Depends(get_async_s
 async def generate_token(
         form_data: OAuth2PasswordRequestForm = Depends(),
         session: AsyncSession = Depends(get_async_session)
-):
+) -> TokenResponse:
     """Creates JWT token. This functions requires email and password.
     Args:
         form_data: User credentials, that contain email(username) and password.
@@ -61,7 +63,7 @@ async def generate_token(
 async def get_all_users(
         user: UserRead = Depends(utils.get_current_user),
         session: AsyncSession = Depends(get_async_session)
-):
+) -> List[UserResponse]:
     """Gets a list of all existing user.
     Args:
         user: Current logged-in user.
@@ -80,7 +82,7 @@ async def get_all_users(
 
 
 @router.get("/api/users/me")
-async def get_user(user: UserRead = Depends(utils.get_current_user)):
+async def get_user(user: UserRead = Depends(utils.get_current_user)) -> Optional[UserResponse]:
     """Gets from database current logged-in user.
     Args:
         user: Current logged-in user.

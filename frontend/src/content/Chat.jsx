@@ -106,7 +106,7 @@ export default class Chat extends React.Component {
         .then(function(r) {
             let chat_li = document.getElementById(`chat_${id}`)
             let name = chat_li.textContent.split(":")
-            chat_li.textContent = `${name[0]}: ${r.data.length === 0 ? 0 : r.data[0].unchecked_messages}`
+            chat_li.textContent = `${name[0]}: ${r.data.unchecked_messages}`
         })
     }
 
@@ -285,7 +285,7 @@ export default class Chat extends React.Component {
         let message = JSON.stringify({
             "ws_type": "send_message",
             "chat_id": this.state.chat_id,
-            "value": r.data.file_path,
+            "value": r.data.detail,
             "type": "file",
         })
         this.state.ws.send(message)

@@ -29,7 +29,7 @@ router = APIRouter(
 async def get_user_chat_list(
         user: UserRead = Depends(get_current_user),
         session: AsyncSession = Depends(get_async_session)
-):
+) -> List[UserIdNameSurname]:
     """Gets user's chat list.
     Args:
         user: Current logged-in user.
@@ -45,7 +45,7 @@ async def get_user_chat_list(
 async def create_chat(
         user: int,
         users: List[int],
-):
+) -> CreateChatResponse:
     """Creates new chat based on input user ids.
     Args:
         user: Initiator database user id.
@@ -63,7 +63,7 @@ async def get_messages_from_specific_chat(
         page: int,
         user: UserRead = Depends(get_current_user),
         session: AsyncSession = Depends(get_async_session),
-):
+) -> List[MessagesFromSpecificChat]:
     """Gets messages from database based on offset.
     Args:
         chat_id: Database chat id.
@@ -84,7 +84,7 @@ async def get_users_in_chat(
         chat_id: int,
         session: AsyncSession = Depends(get_async_session),
         user: UserRead = Depends(get_current_user),
-):
+) -> List[GetUsersInChat]:
     """Gets all users in the specific chat.
     Args:
         chat_id: Database chat id.
@@ -105,7 +105,7 @@ async def get_amount_of_unchecked_messages(
         chat_id: int,
         user: UserRead = Depends(get_current_user),
         session: AsyncSession = Depends(get_async_session),
-):
+) -> UncheckedMessagesAmount:
     """Gets from the database amount of unchecked messages for the specific user in the specific chat.
     Args:
         chat_id: Database chat id.
@@ -127,7 +127,7 @@ async def upload_file(
         user: UserRead = Depends(get_current_user),
         session: AsyncSession = Depends(get_async_session),
         file: UploadFile = File(...),
-):
+) -> SaveFileResponse:
     """Saves files.
     Args:
         chat_id: Database chat id.
@@ -145,7 +145,7 @@ async def upload_file(
 
 
 @router.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
+async def websocket_endpoint(websocket: WebSocket, user_id: int) -> None:
     """Handles client connections to the server. Receives and sends messages.
     Args:
         websocket: Client connection.
