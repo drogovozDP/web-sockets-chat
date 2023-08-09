@@ -14,9 +14,15 @@ alembic = "^1.9.2"
 python-dotenv = "^0.21.1"
 fastapi-users = {extras = ["sqlalchemy"], version = "^10.3.0"}
 websockets = "^10.4"
+<<<<<<< Updated upstream
 httpx = "^0.23.3"
 pytest = "^7.2.2"
 pytest-cov = "^4.0.0"
+=======
+httpx = "^0.24.1"
+aiosqlite = "^0.19.0"
+pytest-asyncio = "^0.21.0"
+>>>>>>> Stashed changes
 
 [tool.poetry.dev-dependencies]
 

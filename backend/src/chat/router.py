@@ -17,6 +17,11 @@ router = APIRouter(
 )
 
 
+@router.get("/test")
+async def get_test_data(test_data: str):
+    return f"test_data: {test_data}"
+
+
 @router.get("/")
 async def get_user_chat_list(
         user: UserRead = Depends(get_current_user),
